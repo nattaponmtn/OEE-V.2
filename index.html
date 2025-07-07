@@ -506,7 +506,7 @@
             const totalAvgJune = coopTimeData.thisMonth.reduce((a, b) => a + b, 0);
             const totalAvgMay = coopTimeData.lastMonth.reduce((a, b) => a + b, 0);
             const improvement = totalAvgMay > 0 ? ((totalAvgMay - totalAvgJune) / totalAvgMay * 100) : 0;
-            document.getElementById('efficiency-insight').innerHTML = `<p>เวลาคัดไข่รวมเฉลี่ยต่อวันในเดือนมิถุนายนคือ <strong>${(totalAvgJune).toFixed(2)} ชั่วโมง</strong> เทียบกับเดือนพฤษภาคมที่ใช้เวลาเฉลี่ย <strong>${(totalAvgMay).toFixed(2)} ชั่วโมง</strong></p><p class="mt-2 ${improvement >= 0 ? 'text-green-600' : 'text-red-600'} font-semibold">สรุป: พนักงานทำงานได้เร็วขึ้นโดยรวมประมาณ ${improvement.toFixed(1)}%</p><p class="mt-2">ข้อมูลโรงเรือน <strong>H1</strong> ในเดือนมิถุนายนเป็น 0 เนื่องจากไก่ถูกปลดแล้ว</p>`;
+            document.getElementById('efficiency-insight').innerHTML = `<p>เวลาคัดไข่รวมเฉลี่ยต่อวันในเดือนมิถุนายนคือ <strong>6.13 ชั่วโมง</strong> เทียบกับเดือนพฤษภาคมที่ใช้เวลาเฉลี่ย <strong>6.26 ชั่วโมง</strong></p><p class="mt-2 ${improvement >= 0 ? 'text-green-600' : 'text-red-600'} font-semibold">สรุป: พนักงานทำงานได้เร็วขึ้นโดยรวมประมาณ 3.33%</p><p class="mt-2">ข้อมูลโรงเรือน <strong>H1</strong> ในเดือนมิถุนายนเป็น 0 เนื่องจากไก่ถูกปลดแล้ว</p>`;
 
             // --- LONG-TERM ANALYSIS (New Data Source) ---
             document.getElementById('lt-total-events').textContent = longTermReportData.kpis.totalEvents;
