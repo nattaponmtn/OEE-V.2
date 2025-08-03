@@ -187,7 +187,7 @@
             </div>
         </section>
 
-        <section class="card mb-8">
+        <section class="card">
             <h2 class="section-title">วิเคราะห์ประสิทธิภาพการทำงาน (Efficiency Analysis)</h2>
              <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                 <div>
@@ -204,53 +204,11 @@
             </div>
         </section>
 
-        <section class="card">
-            <h2 class="section-title">เจาะลึกสาเหตุและแนวโน้มระยะยาว</h2>
-            <p class="text-slate-600 -mt-4 mb-6" id="long-term-title">วิเคราะห์ข้อมูลการซ่อมบำรุงย้อนหลัง</p>
-            
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-slate-800 mb-4 text-center">ภาพรวมสถิติระยะยาว</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-                    <div class="kpi-card">
-                        <h3 class="text-sm font-semibold text-slate-600">จำนวนเหตุการณ์ทั้งหมด</h3>
-                        <p id="lt-total-events" class="text-3xl font-bold text-indigo-600 mt-1">0</p>
-                    </div>
-                    <div class="kpi-card">
-                         <h3 class="text-sm font-semibold text-slate-600">เวลารวมที่เครื่องหยุด (ชม.)</h3>
-                         <p id="lt-total-hours" class="text-3xl font-bold text-orange-600 mt-1">0</p>
-                    </div>
-                    <div class="kpi-card">
-                         <h3 class="text-sm font-semibold text-slate-600">เวลาเฉลี่ยที่เครื่องหยุด (ชม./ครั้ง)</h3>
-                         <p id="lt-avg-hours" class="text-3xl font-bold text-teal-600 mt-1">0</p>
-                    </div>
-                </div>
-            </div>
-
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center mb-8">
-                 <div>
-                    <h3 class="text-xl font-bold text-slate-800 mb-2 text-center">วิเคราะห์ความเสี่ยง: ความถี่ vs ความรุนแรงของปัญหา</h3>
-                    <p class="text-slate-600 mb-4 text-center text-sm">
-                        กราฟนี้แสดงความสัมพันธ์ระหว่าง "ความถี่" (แกนนอน) และ "ความรุนแรง" (แกนตั้ง) ของแต่ละปัญหา ขนาดของวงกลมแสดงถึง "ผลกระทบโดยรวม" (เวลารวมที่หยุด) ทำให้เราสามารถจัดลำดับความสำคัญของปัญหาได้อย่างชัดเจน
-                    </p>
-                    <div class="chart-container" style="height: 400px;">
-                        <canvas id="riskAnalysisChart"></canvas>
-                    </div>
-                </div>
-                <div class="p-6 bg-slate-50 rounded-lg">
-                    <h3 class="text-xl font-bold text-slate-800 mb-4">บทวิเคราะห์โดยละเอียดสำหรับเครื่องคัดไข่</h3>
-                    <div id="long-term-analysis-text" class="space-y-3">
-                    </div>
-                </div>
-            </div>
-        </section>
-
     </div>
 
     <script>
         // --- CHART INSTANCES ---
-        // We declare chart instances globally so we can destroy them before redrawing
-        let detailedOeeChartInstance, detailedLossCodeChartInstance, coopTimeChartInstance, riskAnalysisChartInstance;
+        let detailedOeeChartInstance, detailedLossCodeChartInstance, coopTimeChartInstance;
 
         // --- DATA FETCHING AND PROCESSING ---
         async function fetchDataAndRender() {
@@ -264,14 +222,12 @@
                 processData(csvText);
             } catch (error) {
                 console.error("Failed to fetch or process data:", error);
-                // Display an error message to the user on the page
                 document.body.innerHTML = `<div class="p-8 text-center text-red-600"><h3>เกิดข้อผิดพลาดในการโหลดข้อมูล</h3><p>${error.message}</p></div>`;
             }
         }
 
         function processData(csvText) {
             // --- DATA PARSING ---
-            // Robust CSV parser to handle commas within quoted fields
             function parseCsv(text) {
                 const lines = text.trim().replace(/\r/g, "").split('\n');
                 const headers = lines[0].split(',').map(h => h.trim());
@@ -412,7 +368,6 @@
                 const timePerReason = reasons.length > 0 ? totalTime / reasons.length : 0;
                 reasons.forEach(reason => {
                     let formattedReason = reason.charAt(0).toUpperCase() + reason.slice(1);
-                    // Group similar reasons
                     if (formattedReason.toLowerCase().includes('ขนถาด')) formattedReason = 'การขนถาด';
                     else if (formattedReason.toLowerCase().includes('ซ่อมเลน')) formattedReason = 'ซ่อมแซมเลน';
                     else if (formattedReason.toLowerCase().includes('ไฟดับ')) formattedReason = 'ไฟฟ้าดับ';
@@ -439,7 +394,6 @@
             const calculateCoopAvgTimes = (data) => {
                 const avgs = [];
                 for (let i = 1; i <= 6; i++) {
-                    // Skip H1 for July/June
                     if (i === 1 && data.some(d => d.Date.includes('/06/2025') || d.Date.includes('/07/2025'))) {
                         avgs.push(0);
                         continue;
@@ -463,72 +417,6 @@
             const totalAvgJune = coopTimeData.lastMonth.reduce((a, b) => a + b, 0);
             const improvement = totalAvgJune > 0 ? ((totalAvgJune - totalAvgJuly) / totalAvgJune * 100) : 0;
             document.getElementById('efficiency-insight').innerHTML = `<p>เวลาคัดไข่รวมเฉลี่ยต่อวันในเดือนกรกฎาคมคือ <strong>${totalAvgJuly.toFixed(2)} ชั่วโมง</strong> เทียบกับเดือนมิถุนายนที่ใช้เวลาเฉลี่ย <strong>${totalAvgJune.toFixed(2)} ชั่วโมง</strong></p><p class="mt-2 ${improvement >= 0 ? 'text-green-600' : 'text-red-600'} font-semibold">สรุป: พนักงานทำงานได้เร็วขึ้นโดยรวมประมาณ ${improvement.toFixed(2)}%</p><p class="mt-2 text-sm text-slate-500">หมายเหตุ: ข้อมูลโรงเรือน H1 เป็น 0 เนื่องจากไก่ถูกปลดแล้ว</p>`;
-
-            // --- LONG-TERM ANALYSIS ---
-            const lossEventsAll = allData.filter(d => d['BD Time'] && d['BD Time'].trim() !== '' && d['Loss Code'] && d['Loss Code'].trim() !== '');
-            const problemCategories = lossEventsAll.reduce((acc, day) => {
-                const category = day['Loss Code'].trim();
-                if (!acc[category]) {
-                    acc[category] = { freq: 0, totalBd: 0, analysis: '' };
-                }
-                acc[category].freq += 1;
-                acc[category].totalBd += timeToHours(day['BD Time']);
-                return acc;
-            }, {});
-
-            const analysisMap = {
-                "Process Defects": "เกิดบ่อยที่สุด เช่น \"ขนถาด\" แม้แต่ละครั้งใช้เวลาน้อย แต่รวมแล้วกระทบเวลาโดยรวมมาก",
-                "Equipment Failure": "เกิดน้อยกว่า แต่มีระยะเวลาซ่อมเฉลี่ยสูง บ่งบอกถึงความรุนแรงของปัญหาแต่ละครั้ง",
-                "Setup and Adjust Losses": "การเซตอัป, ตั้งค่าเป็นส่วนหนึ่งของงาน แต่ควรลดเวลาให้สั้นลง",
-                "Other": "กลุ่มปัญหาที่กระจัดกระจาย บางกรณีมีผลกระทบที่สูงเป็นรายครั้ง",
-                "Downtime losses": "การหยุดทำงานเล็กๆ น้อยๆ ที่ส่งผลกระทบสะสม"
-            };
-
-            const problems = Object.keys(problemCategories).map(cat => {
-                const data = problemCategories[cat];
-                return {
-                    category: cat,
-                    freq: data.freq,
-                    totalBd: data.totalBd,
-                    avgBd: data.totalBd / data.freq,
-                    analysis: analysisMap[cat] || "ไม่มีข้อมูลบทวิเคราะห์สำหรับหมวดหมู่นี้"
-                };
-            });
-            
-            const totalEventsLT = problems.reduce((sum, p) => sum + p.freq, 0);
-            const totalHoursLT = problems.reduce((sum, p) => sum + p.totalBd, 0);
-            const avgHoursLT = totalEventsLT > 0 ? totalHoursLT / totalEventsLT : 0;
-
-            document.getElementById('lt-total-events').textContent = totalEventsLT;
-            document.getElementById('lt-total-hours').textContent = totalHoursLT.toFixed(2);
-            document.getElementById('lt-avg-hours').textContent = avgHoursLT.toFixed(2);
-            document.getElementById('long-term-title').textContent = `วิเคราะห์ข้อมูลการซ่อมบำรุงย้อนหลัง (ก.พ. 2568 - ส.ค. 2568)`;
-
-            const riskAnalysisDatasets = problems.map((problem, index) => {
-                const colors = ['#ef4444', '#f97316', '#8b5cf6', '#3b82f6', '#14b8a6', '#a1a1aa', '#d946ef'];
-                return {
-                    label: problem.category,
-                    data: [{ x: problem.freq, y: problem.avgBd, r: Math.sqrt(problem.totalBd) * 4 }],
-                    backgroundColor: `${colors[index % colors.length]}B3`,
-                    borderColor: colors[index % colors.length]
-                };
-            });
-            
-            if (riskAnalysisChartInstance) riskAnalysisChartInstance.destroy();
-            riskAnalysisChartInstance = new Chart(document.getElementById('riskAnalysisChart').getContext('2d'), {
-                type: 'bubble',
-                data: { datasets: riskAnalysisDatasets },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: function(context) { const label = context.dataset.label || ''; const data = context.raw; return `${label}: (ความถี่: ${data.x}, ความรุนแรง: ${data.y.toFixed(2)} ชม.)`; } } } },
-                    scales: { x: { title: { display: true, text: 'ความถี่ (จำนวนครั้ง)' } }, y: { title: { display: true, text: 'ความรุนแรง (เวลาหยุดเฉลี่ย/ชม.)' }, beginAtZero: true } }
-                }
-            });
-
-            const analysisContainer = document.getElementById('long-term-analysis-text');
-            analysisContainer.innerHTML = problems.sort((a,b) => b.totalBd - a.totalBd).map(problem => 
-                `<div class="mb-3"><h4 class="font-semibold text-slate-700">${problem.category}</h4><p class="text-slate-600 text-sm mt-1">${problem.analysis}</p></div>`
-            ).join('');
         }
 
         // --- INITIAL RENDER ---
@@ -536,4 +424,3 @@
     </script>
 </body>
 </html>
-```
