@@ -409,7 +409,7 @@
             if (coopTimeChartInstance) coopTimeChartInstance.destroy();
             coopTimeChartInstance = new Chart(document.getElementById('coopTimeChart').getContext('2d'), {
                 type: 'bar',
-                data: { labels: coopTimeData.labels, datasets: [ { label: 'กรกฎาคม', data: coopTimeData.thisMonth, backgroundColor: '#0d9488' }, { label: 'มิถุนายน', data: coopTimeData.lastMonth, backgroundColor: '#a1a1aa' } ] },
+                data: { labels: coopTimeData.labels, datasets: [ { label: 'กรกฎาคม', '6.01', backgroundColor: '#0d9488' }, { label: 'มิถุนายน', data: coopTimeData.lastMonth, backgroundColor: '#a1a1aa' } ] },
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'เวลาเฉลี่ย (ชม.)' } } } }
             });
 
@@ -424,3 +424,4 @@
     </script>
 </body>
 </html>
+
