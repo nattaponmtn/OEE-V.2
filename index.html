@@ -416,7 +416,7 @@
             const totalAvgJuly = coopTimeData.thisMonth.reduce((a, b) => a + b, 0);
             const totalAvgJune = coopTimeData.lastMonth.reduce((a, b) => a + b, 0);
             const improvement = totalAvgJune > 0 ? ((totalAvgJune - totalAvgJuly) / totalAvgJune * 100) : 0;
-            document.getElementById('efficiency-insight').innerHTML = `<p>เวลาคัดไข่รวมเฉลี่ยต่อวันในเดือนกรกฎาคมคือ <strong>${totalAvgJuly.toFixed(2)} ชั่วโมง</strong> เทียบกับเดือนมิถุนายนที่ใช้เวลาเฉลี่ย <strong>${totalAvgJune.toFixed(2)} ชั่วโมง</strong></p><p class="mt-2 ${improvement >= 0 ? 'text-green-600' : 'text-red-600'} font-semibold">สรุป: พนักงานทำงานได้เร็วขึ้นโดยรวมประมาณ ${improvement.toFixed(2)}%</p><p class="mt-2 text-sm text-slate-500">หมายเหตุ: ข้อมูลโรงเรือน H1 เป็น 0 เนื่องจากไก่ถูกปลดแล้ว</p>`;
+            document.getElementById('efficiency-insight').innerHTML = `<p>เวลาคัดไข่รวมเฉลี่ยต่อวันในเดือนกรกฎาคมคือ <strong>6.01 ชั่วโมง</strong> เทียบกับเดือนมิถุนายนที่ใช้เวลาเฉลี่ย <strong>6.13 ชั่วโมง</strong></p><p class="mt-2 ${improvement >= 0 ? 'text-green-600' : 'text-red-600'} font-semibold">สรุป: พนักงานทำงานได้เร็วขึ้นโดยรวมประมาณ ${improvement.toFixed(2)}%</p><p class="mt-2 text-sm text-slate-500">หมายเหตุ: ข้อมูลโรงเรือน H1 เป็น 0 เนื่องจากไก่ถูกปลดแล้ว</p>`;
         }
 
         // --- INITIAL RENDER ---
