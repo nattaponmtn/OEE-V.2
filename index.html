@@ -3,511 +3,404 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OEE Deep Dive & Root Cause Analysis | สิงหาคม 2568</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <title>Egg Grading - Best Case Scenario</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-
-
     <style>
+        /* General Styling */
+        :root {
+            --brand-blue: #2B74B5;
+            --brand-red: #C97D72;
+            --brand-green: #3FB2A5;
+            --brand-paper: #FAFCFE;
+            --slate-800: #1e293b;
+            --slate-600: #475569;
+            --slate-500: #64748b;
+            --slate-200: #e2e8f0;
+            --slate-100: #f1f5f9;
+        }
         body {
             font-family: 'Sarabun', sans-serif;
-            background-color: #f1f5f9; /* slate-100 */
+            background-color: var(--brand-paper);
+            color: var(--slate-800);
+            margin: 0;
         }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            height: 350px;
-            max-height: 450px;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Layout & Cards */
+        section {
+            padding: 1.5rem;
+            background-color: white;
+            margin-bottom: 1rem;
         }
         .card {
             background-color: white;
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
-            border: 1px solid #e2e8f0; /* slate-200 */
-        }
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1e293b; /* slate-800 */
-            border-bottom: 3px solid #4f46e5; /* indigo-600 */
-            padding-bottom: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .kpi-card {
-            background-color: #ffffff;
-            padding: 1.25rem;
             border-radius: 0.5rem;
-            text-align: center;
-            border: 1px solid #e5e7eb; /* gray-200 */
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            padding: 1rem;
         }
-        .kpi-card h3 {
-            font-weight: 600;
-            color: #475569; /* slate-600 */
-            font-size: 0.875rem;
-            margin-bottom: 0.5rem;
+        .grid { display: grid; gap: 1rem; }
+        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        @media (min-width: 768px) { .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (min-width: 1024px) { .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+        /* Header */
+        .header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--slate-200);
+            background-color: white;
         }
-        .kpi-card .value {
+        .header h1 {
+            font-size: 1.875rem;
             font-weight: 700;
-            font-size: 2.25rem;
-            line-height: 1.1;
+            color: var(--brand-blue);
+            margin: 0;
         }
-        .kpi-card .subtext {
+        .header p {
+            margin: 0.25rem 0 0;
+            color: var(--slate-600);
+        }
+        .header .meta {
             font-size: 0.875rem;
-            color: #64748b; /* slate-500 */
+            color: var(--slate-500);
             margin-top: 0.5rem;
-            min-height: 20px;
         }
-        .kpi-card .change-up { color: #16a34a; }
-        .kpi-card .change-down { color: #dc2626; }
-        .chartjs-tooltip {
-            font-family: 'Sarabun', sans-serif !important;
+
+        /* KPI Section */
+        #kpi-summary-grid .card {
+            border-left: 6px solid transparent;
+            transition: transform 0.2s ease;
         }
-        .chartjs-tooltip-footer {
-            padding-top: 8px !important;
-            margin-top: 8px !important;
-            border-top: 1px solid #ccc !important;
-            font-style: italic !important;
-            color: #eee !important;
+        #kpi-summary-grid .card:hover { transform: translateY(-5px); }
+        #kpi-summary-grid .base-case-card {
+            border-left-color: var(--brand-blue);
+            box-shadow: 0 0 0 2px var(--brand-blue);
         }
+        .kpi-label { font-size: 0.875rem; color: var(--slate-500); }
+        .kpi-value { font-weight: 800; color: var(--brand-blue); }
+        .kpi-value.base-case-value { font-size: 2.25rem; }
+        .kpi-value.other-value { font-size: 1.875rem; }
+        .kpi-description { font-size: 0.875rem; color: var(--slate-500); margin-top: 0.25rem; }
+        
+        /* Section Titles */
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: var(--brand-blue);
+        }
+
+        /* Lists and Tables */
+        ul.styled-list {
+            list-style-type: disc;
+            list-style-position: inside;
+            padding-left: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .data-table {
+            width: 100%;
+            font-size: 0.875rem;
+            border-collapse: collapse;
+        }
+        .data-table th, .data-table td {
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid var(--slate-200);
+            text-align: left;
+        }
+        .data-table thead { background-color: var(--slate-100); }
+        .data-table th { font-weight: 600; }
+        .data-table .text-center { text-align: center; }
+        .data-table .text-right { text-align: right; }
+        .table-container { overflow-x: auto; }
+
+        /* Histogram */
+        .histogram-container { display: flex; align-items: flex-end; gap: 0.75rem; height: 224px; border: 1px solid var(--slate-100); border-radius: 0.25rem; padding: 1rem; }
+        .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .bar-label { font-size: 0.75rem; color: var(--slate-600); margin-bottom: 0.25rem; }
+        .bar { width: 100%; border-top-left-radius: 0.25rem; border-top-right-radius: 0.25rem; background: var(--brand-blue); box-shadow: inset 0 -2px 0 rgba(255,255,255,.4); transition: background-color 0.2s; }
+        .bar:hover { background-color: var(--brand-green); }
+        .range-label { font-size: 0.75rem; color: var(--slate-800); margin-top: 0.25rem; }
+        .histogram-footer-text { font-size: 0.875rem; color: var(--slate-600); margin-top: 0.5rem; }
+
+        /* Scenario Table */
+        #scenario-table tbody tr { cursor: pointer; transition: background-color 0.2s; }
+        #scenario-table tbody tr:hover { background-color: #eff6ff; }
+        .base-case-row { background-color: var(--slate-100); font-weight: 700; }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            max-width: 500px;
+            width: 90%;
+            padding: 1.5rem;
+        }
+        .modal-title { margin-top: 0; font-size: 1.125rem; font-weight: 600; color: var(--brand-blue); }
+        .modal-body { font-size: 0.875rem; color: var(--slate-600); }
+        .modal-button {
+            margin-top: 1rem;
+            padding: 0.25rem 1rem;
+            border-radius: 0.25rem;
+            border: none;
+            background-color: var(--slate-200);
+            cursor: pointer;
+        }
+        .modal-button:hover { background-color: #d1d5db; }
     </style>
 </head>
-<body class="antialiased text-slate-700">
+<body>
 
-    <div class="container mx-auto p-4 md:p-6 max-w-7xl">
-
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">OEE Deep Dive & Root Cause Analysis</h1>
-            <p id="dashboard-subtitle" class="text-slate-600 mt-2 text-lg">สรุปผลการดำเนินงานเครื่องคัดไข่</p>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 id="header-title"></h1>
+            <p id="header-subtitle"></p>
+            <div id="header-meta" class="meta"></div>
         </header>
 
-        <section class="mb-8">
-            <h2 id="kpi-title" class="section-title">ภาพรวมผลการดำเนินงานหลัก</h2>
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div class="kpi-card">
-                    <h3>Avg. OEE</h3>
-                    <p id="kpi-oee" class="value text-indigo-600">0%</p>
-                    <p id="kpi-oee-comp" class="subtext"></p>
+        <!-- KPI Summary -->
+        <main style="padding: 1.5rem; background-color: var(--brand-paper);">
+            <div id="kpi-summary-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4"></div>
+            
+            <!-- Reasons -->
+            <section>
+                <h2 class="section-title">เหตุผลที่เลือก Base Case 36,000 ฟอง/ชั่วโมง</h2>
+                <ul id="base-case-reasons-list" class="styled-list"></ul>
+            </section>
+            
+            <!-- Histogram & Stats -->
+            <div class="grid grid-cols-1 lg:grid-cols-2">
+                <div class="card">
+                    <h2 class="section-title">การกระจายผลผลิตต่อชั่วโมง (Histogram)</h2>
+                    <div id="histogram-chart" class="histogram-container"></div>
+                    <p class="histogram-footer-text">ช่วงที่เกิดบ่อยสุดคือ 35k–37k สนับสนุน Base Case 36k</p>
                 </div>
-                <div class="kpi-card">
-                    <h3>Avg. Availability</h3>
-                    <p id="kpi-a" class="value text-cyan-600">0%</p>
-                    <p id="kpi-a-comp" class="subtext"></p>
-                </div>
-                <div class="kpi-card">
-                    <h3>Avg. Performance</h3>
-                    <p id="kpi-p" class="value text-amber-600">0%</p>
-                    <p id="kpi-p-comp" class="subtext"></p>
-                </div>
-                <div class="kpi-card">
-                    <h3>Avg. Quality</h3>
-                    <p id="kpi-q" class="value text-slate-600">0%</p>
-                    <p id="kpi-q-comp" class="subtext"></p>
-                </div>
-                <div class="kpi-card">
-                    <h3>Avg. Product/H</h3>
-                    <p id="kpi-prod" class="value text-teal-600">0</p>
-                    <p id="kpi-prod-comp" class="subtext"></p>
-                </div>
-            </div>
-        </section>
-        
-        <section class="card mb-8">
-            <h2 id="analysis-title" class="section-title">บทวิเคราะห์ OEE และผลผลิตรายวัน</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                 <div class="kpi-card">
-                    <h3>จำนวนไข่ผ่านเครื่องคัด (ฟอง)</h3>
-                    <p id="kpi-total-eggs" class="value text-blue-700">0</p>
-                    <p id="kpi-total-eggs-comp" class="subtext"></p>
-                </div>
-                <div class="kpi-card">
-                    <h3>ไข่เสียหายทั้งหมด (ฟอง)</h3>
-                    <p id="kpi-total-defect" class="value text-red-700">0</p>
-                    <p id="kpi-total-defect-comp" class="subtext"></p>
-                </div>
-                <div class="kpi-card">
-                    <h3>อัตราไข่เสียหาย (Defect Rate)</h3>
-                    <p id="kpi-defect-rate" class="value text-gray-700">0%</p>
-                    <p class="subtext">&nbsp;</p> </div>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-                <div>
-                    <h3 class="text-lg font-semibold text-center text-slate-700 mb-2">แนวโน้ม OEE รายวัน</h3>
-                    <div class="chart-container" style="height: 350px;">
-                        <canvas id="oeeComponentsChart"></canvas>
+                <div class="card">
+                    <h2 class="section-title">ค่าสถิติพื้นฐาน (ฟอง/ชั่วโมง)</h2>
+                    <div class="table-container">
+                        <table id="basic-stats-table" class="data-table"></table>
                     </div>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-center text-slate-700 mb-2">แนวโน้มผลผลิตและไข่เสียหายรายวัน</h3>
-                     <div class="chart-container" style="height: 350px;">
-                        <canvas id="productionDefectChart"></canvas>
-                    </div>
+                    <p style="font-size: 0.875rem; color: var(--slate-600); margin-top: 1rem;"><strong>การตีความ:</strong> Q1–Q3 (33,291–37,234) คือกรอบของวันทำงานส่วนใหญ่</p>
                 </div>
             </div>
-        </section>
 
-
-        <section class="card mb-8">
-            <h2 id="loss-time-title" class="section-title">เจาะลึกสาเหตุของเวลาที่สูญเสีย</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                 <div class="kpi-card">
-                    <h3>เวลารวมที่หยุด (ชม.)</h3>
-                    <p id="kpi-total-loss" class="value text-orange-600">0</p>
-                </div>
-                <div class="kpi-card">
-                    <h3>จำนวนเหตุการณ์</h3>
-                    <p id="kpi-total-events" class="value text-purple-600">0</p>
-                </div>
-                <div class="kpi-card">
-                    <h3>เวลาเฉลี่ยที่หยุด/เหตุการณ์ (นาที)</h3>
-                    <p id="kpi-avg-loss-event" class="value text-slate-600">0</p>
-                </div>
+            <!-- Loss Impact & Causes -->
+            <div class="grid grid-cols-1 lg:grid-cols-2" style="margin-top: 1rem;">
+                <section class="card" style="margin:0;">
+                    <h2 class="section-title">ผลกระทบของ Loss Time ต่อ Performance</h2>
+                    <div class="table-container">
+                        <table id="loss-impact-table" class="data-table"></table>
+                    </div>
+                </section>
+                <section class="card" style="margin:0;">
+                    <h2 class="section-title">สาเหตุหลักของ Loss</h2>
+                    <div class="table-container">
+                        <table id="loss-causes-table" class="data-table"></table>
+                    </div>
+                </section>
             </div>
             
-             <div class="mt-8">
-                <h3 class="text-lg font-semibold text-center text-slate-700 mb-2">5 อันดับเหตุการณ์ที่ทำให้เกิด Loss Time สูงสุด</h3>
-                <div class="overflow-x-auto max-w-3xl mx-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-slate-100">
-                            <tr>
-                                <th class="p-2 text-left font-semibold text-slate-600">วันที่</th>
-                                <th class="p-2 text-left font-semibold text-slate-600">สาเหตุ</th>
-                                <th class="p-2 text-right font-semibold text-slate-600">เวลาที่สูญเสีย</th>
-                            </tr>
-                        </thead>
-                        <tbody id="top-loss-table">
-                        </tbody>
-                    </table>
+             <!-- Scenarios -->
+            <section style="margin-top: 1rem;">
+                <h2 class="section-title">Scenario & คำแนะนำ</h2>
+                <div class="table-container">
+                    <table id="scenario-table" class="data-table"></table>
                 </div>
-            </div>
-        </section>
-
-        <section class="card">
-            <h2 class="section-title">วิเคราะห์ประสิทธิภาพการทำงาน (Efficiency Analysis)</h2>
-             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                <div>
-                    <h3 class="text-lg font-semibold text-center text-slate-700 mb-2">เวลาเฉลี่ยที่ใช้คัดไข่ในแต่ละโรงเรือน (ชม.)</h3>
-                    <div class="chart-container" style="height: 300px;">
-                        <canvas id="coopTimeChart"></canvas>
-                    </div>
-                </div>
-                <div class="p-6 bg-slate-50 rounded-lg">
-                    <h3 class="text-lg font-semibold text-slate-800">บทวิเคราะห์ประสิทธิภาพรายโรงเรือน</h3>
-                    <div id="efficiency-insight" class="mt-2 text-slate-600 space-y-2">
-                    </div>
-                </div>
-            </div>
-        </section>
-
+                <p style="font-size: 0.875rem; color: var(--slate-600); margin-top: 0.5rem;">คลิกแถวเพื่อดูรายละเอียดของสถานการณ์นั้น ๆ</p>
+            </section>
+        </main>
     </div>
 
+    <!-- Modal -->
+    <div id="scenario-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title" class="modal-title"></h3>
+            <p id="modal-body" class="modal-body"></p>
+            <p id="modal-evidence" style="font-size: 0.75rem; color: var(--slate-500); margin-top: 0.25rem;"></p>
+            <ul id="modal-details-list" class="styled-list" style="margin-top: 0.75rem;"></ul>
+            <button id="modal-close-btn" class="modal-button">ปิด</button>
+        </div>
+    </div>
+
+
     <script>
-        // --- CHART INSTANCES ---
-        let oeeComponentsChartInstance, productionDefectChartInstance, coopTimeChartInstance;
+        // --- DATA (from React component) ---
+        const META = { period: 'ก.พ.–ส.ค. 2025', totalDays: 184, machine: 'Nabel Oracion 6000' };
+        const kpiSummary = [
+            { label: 'Base Case (ฟอง/ชม.)', value: '36,000', description: 'เป้าหมายหลักที่แนะนำ' },
+            { label: 'Performance เฉลี่ย', value: '58.71%', description: 'ค่าเฉลี่ย 7 เดือน' },
+            { label: 'ผลผลิตเฉลี่ย (ฟอง/ชม.)', value: '35,237', description: 'ตลอดช่วงการวิเคราะห์' },
+            { label: 'โอกาสสำเร็จ (≥36k)', value: '43%', description: '79 จาก 184 วัน' },
+        ];
+        const histogram = [
+            { range: '27k–29k', days: 6 }, { range: '29k–31k', days: 5 }, { range: '31k–33k', days: 36 },
+            { range: '33k–35k', days: 42 }, { range: '35k–37k', days: 49 }, { range: '37k–39k', days: 38 },
+            { range: '39k–41k', days: 8 },
+        ];
+        const lossImpact = [
+            { range: '0 นาที', perf: '62.5%', production: '37,500' }, { range: '1–15 นาที', perf: '60.2%', production: '36,120' },
+            { range: '16–30 นาที', perf: '58.8%', production: '35,280' }, { range: '31–60 นาที', perf: '56.4%', production: '33,840' },
+            { range: '> 60 นาที', perf: '52.1%', production: '31,260' },
+        ];
+        const basicStats = [
+            { k: 'Minimum (ต่ำสุด)', v: '27,450' }, { k: 'Q1 (25%)', v: '33,291' },
+            { k: 'Median (50%)', v: '35,432' }, { k: 'Mean (ค่าเฉลี่ย)', v: '35,237' },
+            { k: 'Q3 (75%)', v: '37,234' }, { k: 'Maximum (สูงสุด)', v: '40,920' },
+        ];
+        const lossCauses = [
+            { cause: 'ขนถาด', freq: '115 ครั้ง', percent: '91.3%' },
+            { cause: 'ปัญหาเลน 3,4,7', freq: '18 ครั้ง', percent: '14.3%' },
+            { cause: 'น็อต/Bucket หลุด', freq: '9 ครั้ง', percent: '7.1%' },
+        ];
+        const scenarios = [
+            { title: 'Base Case (มาตรฐาน)', target: '36,000', condition: 'เล้าไข่ครบ • Loss < 20 นาที', risk: 'ต่ำ', action: 'รักษามาตรฐาน', evidence: '≥36k: 79/184 วัน (43%)', details: ['ใช้เป็นเป้าหมายหลักในวันทำงานปกติ', 'ทำได้แล้ว 43% ของวัน (79 จาก 184 วัน)', 'ลด Loss Time ต่อเนื่อง'] },
+            { title: 'ลดเล้าใหญ่ 1 เล้า', target: 'ลดลงตาม Supply', condition: 'ปริมาณไข่ลด (ปลดเล้าใหญ่)', risk: 'กลาง', action: 'ปรับเป้าหมายชั่วคราว', evidence: '—', details: ['สะท้อนข้อจำกัดด้าน Supply ชั่วคราว', 'วางแผนคืนสู่ Base Case ทันทีที่ Supply กลับมา'] },
+            { title: 'Loss > 30 นาที', target: '<34,000', condition: 'ขาดการบำรุง/เสียบ่อย', risk: 'สูง', action: 'บำรุง/แก้ระบบขนถาด', evidence: '—', details: ['ทำ Root-cause + PM เลนที่มีปัญหาซ้ำ', 'ย่น MTTR เพื่อลด Downtime'] },
+            { title: 'Excellent Day', target: '≥38,400', condition: 'No Loss • Input เต็ม', risk: 'โอกาส', action: 'ผลักดันศักยภาพ', evidence: '—', details: ['บันทึกวิธีปฏิบัติ/กำลังคนในวันที่ดีพิเศษ', 'ย้ำสภาพแวดล้อมที่เอื้อต่อ Zero Loss'] },
+        ];
+        const baseCaseReasons = [
+            'เป็นเลขกลม จำง่าย สื่อสารสะดวก', 'อยู่ระหว่าง Median (35,432) และ Mean+0.5×SD (~36,200)',
+            'ปัจจุบันทำได้แล้ว 43% ของวัน (79/184 วัน)', 'ยังมีช่องให้พัฒนาเพิ่มขึ้นอย่างมีเหตุผล',
+        ];
 
-        // --- DATA FETCHING AND PROCESSING ---
-        async function fetchDataAndRender() {
-            const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRlpC6mhBM2bPVYgz5pS6PAIW9Brzs6GAOH0wwFpfxB6eK_L5InKpqIcSusdOlRSLZ0swhFlqBiysx8/pub?gid=565758569&single=true&output=csv';
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`Network response was not ok: ${response.statusText}`);
-                }
-                const csvText = await response.text();
-                processData(csvText);
-            } catch (error) {
-                console.error("Failed to fetch or process data:", error);
-                document.body.innerHTML = `<div class="p-8 text-center text-red-600"><h3>เกิดข้อผิดพลาดในการโหลดข้อมูล</h3><p>${error.message}</p></div>`;
-            }
+        // --- RENDER FUNCTIONS ---
+        function renderHeader() {
+            document.getElementById('header-title').textContent = 'นำเสนอ Best Case Scenario — การคัดไข่';
+            document.getElementById('header-subtitle').textContent = 'อธิบายตัวเลข Base Case ที่แนะนำ (36,000 ฟอง/ชม.) และเหตุผลเชิงข้อมูล';
+            document.getElementById('header-meta').textContent = `ช่วงข้อมูล: ${META.period} • ${META.totalDays} วัน • เครื่อง: ${META.machine}`;
         }
 
-        function processData(csvText) {
-            // --- DATA PARSING ---
-            function parseCsv(text) {
-                const lines = text.trim().replace(/\r/g, "").split('\n');
-                const headers = lines[0].split(',').map(h => h.trim());
-                const data = lines.slice(1).map(line => {
-                    const values = [];
-                    let current = '';
-                    let inQuotes = false;
-                    for (let char of line) {
-                        if (char === '"') {
-                            inQuotes = !inQuotes;
-                        } else if (char === ',' && !inQuotes) {
-                            values.push(current);
-                            current = '';
-                        } else {
-                            current += char;
-                        }
-                    }
-                    values.push(current);
-                    
-                    const entry = {};
-                    headers.forEach((header, i) => {
-                        entry[header] = values[i] ? values[i].trim() : '';
-                    });
-                    return entry;
-                });
-                return data;
-            }
-
-            const allData = parseCsv(csvText);
-
-            // --- HELPER FUNCTIONS ---
-            const timeToHours = (timeStr) => {
-                if (!timeStr || typeof timeStr !== 'string' || timeStr.trim() === '') return 0;
-                const parts = timeStr.split(':').map(Number);
-                if (parts.length >= 2) {
-                    const hours = parts[0] || 0;
-                    const minutes = parts[1] || 0;
-                    const seconds = parts[2] || 0;
-                    return hours + minutes / 60 + seconds / 3600;
-                }
-                return 0;
-            };
-             const hoursToTimeString = (decimalHours) => {
-                if (isNaN(decimalHours) || decimalHours < 0) return "00:00:00";
-                const totalSeconds = Math.round(decimalHours * 3600);
-                const hours = Math.floor(totalSeconds / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const seconds = totalSeconds % 60;
-                const pad = (num) => String(num).padStart(2, '0');
-                return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-            };
-            const parsePercent = (pStr) => (!pStr || typeof pStr !== 'string') ? 0 : parseFloat(pStr.replace('%', '')) || 0;
-            const parseNumber = (nStr) => (!nStr || typeof nStr !== 'string') ? 0 : parseInt(String(nStr).replace(/,/g, ''), 10) || 0;
-
-            // --- DYNAMIC MONTH DETECTION ---
-            const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-            const dates = allData.map(d => {
-                const parts = d.Date.split('/');
-                if (parts.length === 3) {
-                    return new Date(parts[2], parts[1] - 1, parts[0]);
-                }
-                return null;
-            }).filter(d => d && !isNaN(d));
-
-            const maxDate = new Date(Math.max.apply(null, dates));
-            const currentMonth = maxDate.getMonth() + 1;
-            const currentYear = maxDate.getFullYear();
-            const currentMonthName = thaiMonths[maxDate.getMonth()];
-
-            const prevMonthDate = new Date(maxDate);
-            prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
-            const previousMonth = prevMonthDate.getMonth() + 1;
-            const previousYear = prevMonthDate.getFullYear();
-            const previousMonthShortName = thaiMonths[prevMonthDate.getMonth()].substring(0, 3) + '.';
-
-            const currentMonthString = `/${String(currentMonth).padStart(2, '0')}/${currentYear}`;
-            const previousMonthString = `/${String(previousMonth).padStart(2, '0')}/${previousYear}`;
-
-            const latestMonthData = allData.filter(d => d.Date && d.Date.endsWith(currentMonthString));
-            const previousMonthData = allData.filter(d => d.Date && d.Date.endsWith(previousMonthString));
-            
-            const latestMonthDataWithOEE = latestMonthData.filter(d => d.OEE);
-            const previousMonthDataWithOEE = previousMonthData.filter(d => d.OEE);
-
-            // --- UPDATE TITLES ---
-            document.title = `OEE Deep Dive | ${currentMonthName} ${currentYear + 543}`;
-            document.getElementById('dashboard-subtitle').textContent = `สรุปผลการดำเนินงานเครื่องคัดไข่ | ${currentMonthName} ${currentYear + 543}`;
-            document.getElementById('kpi-title').textContent = `ภาพรวมผลการดำเนินงานหลัก (${currentMonthName} ${currentYear + 543})`;
-            document.getElementById('analysis-title').textContent = `บทวิเคราะห์ OEE และผลผลิตรายวัน (${currentMonthName} ${currentYear + 543})`;
-            document.getElementById('loss-time-title').textContent = `เจาะลึกสาเหตุของเวลาที่สูญเสีย (${currentMonthName} ${currentYear + 543})`;
-
-
-            // --- KPI CALCULATIONS ---
-            const calculateAverages = (data) => {
-                if (!data || data.length === 0) return { A: 0, P: 0, Q: 0, OEE: 0, ProdH: 0 };
-                const totals = data.reduce((acc, day) => {
-                    acc.A += parsePercent(day.A);
-                    acc.P += parsePercent(day.P);
-                    acc.Q += parsePercent(day.Q);
-                    acc.OEE += parsePercent(day.OEE);
-                    acc.ProdH += parseNumber(day['Product/H']);
-                    return acc;
-                }, { A: 0, P: 0, Q: 0, OEE: 0, ProdH: 0 });
-                const count = data.length;
-                return { A: (totals.A / count), P: (totals.P / count), Q: (totals.Q / count), OEE: (totals.OEE / count), ProdH: (totals.ProdH / count) };
-            };
-            const latestAvgs = calculateAverages(latestMonthDataWithOEE);
-            const previousAvgs = calculateAverages(previousMonthDataWithOEE);
-            const renderComparison = (current, previous, unit = '', higherIsBetter = true) => {
-                const diff = current - previous;
-                let changeClass = '';
-                if (diff !== 0) {
-                    if (higherIsBetter) {
-                        changeClass = diff > 0 ? 'change-up' : 'change-down';
-                    } else {
-                        changeClass = diff < 0 ? 'change-up' : 'change-down';
-                    }
-                }
-                const arrow = diff >= 0 ? '▲' : '▼';
-                return `<span class="${changeClass}">${arrow} ${Math.abs(diff).toFixed(2)}${unit} vs ${previousMonthShortName}</span>`;
-            };
-            document.getElementById('kpi-oee').textContent = `${latestAvgs.OEE.toFixed(2)}%`;
-            document.getElementById('kpi-oee-comp').innerHTML = renderComparison(latestAvgs.OEE, previousAvgs.OEE, '%');
-            document.getElementById('kpi-a').textContent = `${latestAvgs.A.toFixed(2)}%`;
-            document.getElementById('kpi-a-comp').innerHTML = renderComparison(latestAvgs.A, previousAvgs.A, '%');
-            document.getElementById('kpi-p').textContent = `${latestAvgs.P.toFixed(2)}%`;
-            document.getElementById('kpi-p-comp').innerHTML = renderComparison(latestAvgs.P, previousAvgs.P, '%');
-            document.getElementById('kpi-q').textContent = `${latestAvgs.Q.toFixed(2)}%`;
-            document.getElementById('kpi-q-comp').innerHTML = renderComparison(latestAvgs.Q, previousAvgs.Q, '%');
-            document.getElementById('kpi-prod').textContent = `${Math.round(latestAvgs.ProdH).toLocaleString()}`;
-            document.getElementById('kpi-prod-comp').innerHTML = renderComparison(latestAvgs.ProdH, previousAvgs.ProdH);
-
-            // --- DETAILED OEE ANALYSIS ---
-            const totalEggsLatest = latestMonthData.reduce((sum, day) => sum + parseNumber(day['Total Product']), 0);
-            const totalDefectsLatest = latestMonthData.reduce((sum, day) => sum + parseNumber(day['Sum Defect']), 0);
-            const totalEggsPrevious = previousMonthData.reduce((sum, day) => sum + parseNumber(day['Total Product']), 0);
-            const totalDefectsPrevious = previousMonthData.reduce((sum, day) => sum + parseNumber(day['Sum Defect']), 0);
-            const defectRateLatest = totalEggsLatest > 0 ? (totalDefectsLatest / totalEggsLatest) * 100 : 0;
-            
-            document.getElementById('kpi-total-eggs').textContent = totalEggsLatest.toLocaleString();
-            document.getElementById('kpi-total-eggs-comp').innerHTML = renderComparison(totalEggsLatest, totalEggsPrevious, ' ฟอง');
-            document.getElementById('kpi-total-defect').textContent = totalDefectsLatest.toLocaleString();
-            document.getElementById('kpi-total-defect-comp').innerHTML = renderComparison(totalDefectsLatest, totalDefectsPrevious, ' ฟอง', false);
-            document.getElementById('kpi-defect-rate').textContent = `${defectRateLatest.toFixed(2)}%`;
-            
-            // --- CHARTS ---
-            // Simplified OEE Chart
-            if (oeeComponentsChartInstance) oeeComponentsChartInstance.destroy();
-            oeeComponentsChartInstance = new Chart(document.getElementById('oeeComponentsChart').getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: latestMonthDataWithOEE.map(d => d.Date.substring(0, 5)),
-                    datasets: [
-                        {
-                            label: 'OEE (%)',
-                            data: latestMonthDataWithOEE.map(d => parsePercent(d.OEE)),
-                            borderColor: '#4f46e5',
-                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                            borderWidth: 2.5,
-                            tension: 0.3,
-                            fill: true,
-                            pointRadius: 2,
-                            pointBackgroundColor: '#4f46e5'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: { display: true, text: 'OEE (%)' }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false }
-                    }
-                }
-            });
-
-            // Production and Defect Chart
-            if (productionDefectChartInstance) productionDefectChartInstance.destroy();
-            productionDefectChartInstance = new Chart(document.getElementById('productionDefectChart').getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: latestMonthData.map(d => d.Date.substring(0, 5)),
-                    datasets: [
-                        {
-                            label: 'ไข่เสียหาย (ฟอง)',
-                            type: 'line',
-                            data: latestMonthData.map(d => parseNumber(d['Sum Defect'])),
-                            borderColor: '#ef4444',
-                            borderWidth: 2,
-                            yAxisID: 'yDefects',
-                            tension: 0.1,
-                            pointRadius: 2
-                        },
-                        {
-                            label: 'ผลผลิตรวม (ฟอง)',
-                            data: latestMonthData.map(d => parseNumber(d['Total Product'])),
-                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                            yAxisID: 'yProduction'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    scales: {
-                        yProduction: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: { display: true, text: 'ผลผลิต (ฟอง)' }
-                        },
-                        yDefects: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: { display: true, text: 'ไข่เสียหาย (ฟอง)' },
-                            grid: { drawOnChartArea: false }
-                        }
-                    }
-                }
-            });
-
-            // --- LOSS TIME ANALYSIS ---
-            const lossEventsLatest = latestMonthData.filter(d => d['BD Time'] && d['BD Time'].trim() !== '');
-            const totalLossHoursLatest = lossEventsLatest.reduce((sum, day) => sum + timeToHours(day['BD Time']), 0);
-            const totalEventsLatest = lossEventsLatest.length;
-            const avgLossPerEventMinutes = totalEventsLatest > 0 ? (totalLossHoursLatest * 60) / totalEventsLatest : 0;
-            document.getElementById('kpi-total-loss').textContent = `${totalLossHoursLatest.toFixed(2)}`;
-            document.getElementById('kpi-total-events').textContent = totalEventsLatest;
-            document.getElementById('kpi-avg-loss-event').textContent = `${avgLossPerEventMinutes.toFixed(1)}`;
-
-            const topLosses = lossEventsLatest.sort((a, b) => timeToHours(b['BD Time']) - timeToHours(a['BD Time'])).slice(0, 5);
-            document.getElementById('top-loss-table').innerHTML = topLosses.map(item => `<tr class="border-b border-slate-200 hover:bg-slate-50"><td class="p-2">${item.Date.substring(0,5)}</td><td class="p-2 text-slate-600">${item.Note}</td><td class="p-2 text-right font-semibold text-red-700">${item['BD Time']}</td></tr>`).join('');
-
-            // --- EFFICIENCY ANALYSIS ---
-            const calculateCoopAvgTimes = (data) => {
-                const avgs = [];
-                for (let i = 1; i <= 6; i++) {
-                    if (i === 1) { // H1 is always 0 now
-                        avgs.push(0);
-                        continue;
-                    }
-                    const coopData = data.filter(day => timeToHours(day[`H${i}_Oparation`]) > 0);
-                    const totalTime = coopData.reduce((sum, day) => sum + timeToHours(day[`H${i}_Oparation`]), 0);
-                    avgs.push(coopData.length > 0 ? totalTime / coopData.length : 0);
-                }
-                return avgs;
-            };
-            const coopTimeData = { labels: ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'], thisMonth: calculateCoopAvgTimes(latestMonthData), lastMonth: calculateCoopAvgTimes(previousMonthData) };
-            
-            if (coopTimeChartInstance) coopTimeChartInstance.destroy();
-            coopTimeChartInstance = new Chart(document.getElementById('coopTimeChart').getContext('2d'), {
-                type: 'bar',
-                data: { labels: coopTimeData.labels, datasets: [ { label: currentMonthName, data: coopTimeData.thisMonth, backgroundColor: '#0d9488' }, { label: thaiMonths[previousMonth-1], data: coopTimeData.lastMonth, backgroundColor: '#a1a1aa' } ] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'เวลาเฉลี่ย (ชม.)' } } } }
-            });
-
-            // Efficiency analysis based on Avg. Up Time
-            const calculateAvgUpTime = (data) => {
-                const validDays = data.filter(day => timeToHours(day['Up Time']) > 0);
-                if (validDays.length === 0) return 0;
-                const totalUpTimeHours = validDays.reduce((sum, day) => sum + timeToHours(day['Up Time']), 0);
-                return totalUpTimeHours / validDays.length;
-            };
-
-            const avgUpTimeLatest = calculateAvgUpTime(latestMonthData);
-            const avgUpTimePrevious = calculateAvgUpTime(previousMonthData);
-            
-            const improvement = avgUpTimePrevious > 0 ? ((avgUpTimePrevious - avgUpTimeLatest) / avgUpTimePrevious * 100) : 0;
-            
-            document.getElementById('efficiency-insight').innerHTML = `<p>เวลาคัดไข่จริง (Up Time) เฉลี่ยต่อวันในเดือน${currentMonthName}คือ <strong>${hoursToTimeString(avgUpTimeLatest)}</strong> เทียบกับเดือน${thaiMonths[previousMonth-1]}ที่ใช้เวลาเฉลี่ย <strong>${hoursToTimeString(avgUpTimePrevious)}</strong></p><p class="mt-2 ${improvement >= 0 ? 'text-green-600' : 'text-red-600'} font-semibold">สรุป: ใช้เวลาคัดไข่จริงเฉลี่ยเร็วขึ้น ${improvement.toFixed(2)}%</p><p class="mt-2 text-sm text-slate-500">หมายเหตุ: การคำนวณนี้อ้างอิงจาก "Up Time" ซึ่งเป็นเวลาที่เครื่องจักรทำงานคัดไข่จริงๆ ไม่รวมเวลาหยุด</p>`;
+        function renderKPIs() {
+            const grid = document.getElementById('kpi-summary-grid');
+            grid.innerHTML = kpiSummary.map((item, idx) => `
+                <div class="card ${idx === 0 ? 'base-case-card' : ''}">
+                    <div class="kpi-label">${item.label}</div>
+                    <div class="kpi-value ${idx === 0 ? 'base-case-value' : 'other-value'}">${item.value}</div>
+                    <div class="kpi-description">${item.description}</div>
+                </div>
+            `).join('');
+        }
+        
+        function renderBaseCaseReasons() {
+            const list = document.getElementById('base-case-reasons-list');
+            list.innerHTML = baseCaseReasons.map(reason => `<li>${reason}</li>`).join('');
         }
 
-        // --- INITIAL RENDER ---
-        document.addEventListener('DOMContentLoaded', fetchDataAndRender);
+        function renderHistogram() {
+            const chartContainer = document.getElementById('histogram-chart');
+            const BAR_MAX_PX = 180, BAR_MIN_PX = 8;
+            const maxDays = Math.max(...histogram.map(h => h.days), 1);
+
+            chartContainer.innerHTML = histogram.map(bin => {
+                const ratio = Math.max(0, bin.days) / maxDays;
+                const px = Math.round(ratio * BAR_MAX_PX) + BAR_MIN_PX;
+                return `
+                    <div class="bar-wrapper" title="${bin.range}: ${bin.days} วัน">
+                        <div class="bar-label">${bin.days} วัน</div>
+                        <div class="bar" style="height: ${px}px;"></div>
+                        <div class="range-label">${bin.range}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderTables() {
+            const statsTable = document.getElementById('basic-stats-table');
+            statsTable.innerHTML = `
+                <thead><tr><th>สถิติ</th><th class="text-right">ค่า</th></tr></thead>
+                <tbody>${basicStats.map(row => `<tr><td>${row.k}</td><td class="text-right">${row.v}</td></tr>`).join('')}</tbody>`;
+
+            const impactTable = document.getElementById('loss-impact-table');
+            impactTable.innerHTML = `
+                <thead><tr><th>Loss Time/วัน</th><th class="text-center">Performance เฉลี่ย</th><th class="text-center">ผลผลิต (ฟอง/ชม.)</th></tr></thead>
+                <tbody>${lossImpact.map(row => `<tr><td>${row.range}</td><td class="text-center">${row.perf}</td><td class="text-center">${row.production}</td></tr>`).join('')}</tbody>`;
+
+            const causesTable = document.getElementById('loss-causes-table');
+            causesTable.innerHTML = `
+                <thead><tr><th>สาเหตุ</th><th class="text-center">ความถี่</th><th class="text-center">% ของ Loss</th></tr></thead>
+                <tbody>${lossCauses.map(row => `<tr><td>${row.cause}</td><td class="text-center">${row.freq}</td><td class="text-center">${row.percent}</td></tr>`).join('')}</tbody>`;
+        }
+        
+        function renderScenarios() {
+            const table = document.getElementById('scenario-table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Scenario</th><th class="text-center">Target (ฟอง/ชม.)</th>
+                        <th>เงื่อนไข</th><th class="text-center">ความเสี่ยง</th><th>การกระทำ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${scenarios.map((s, i) => `
+                        <tr data-index="${i}" class="${s.title.startsWith('Base Case') ? 'base-case-row' : ''}">
+                            <td>${s.title}</td><td class="text-center">${s.target}</td>
+                            <td>${s.condition}</td><td class="text-center">${s.risk}</td>
+                            <td>${s.action}</td>
+                        </tr>`).join('')}
+                </tbody>`;
+        }
+
+        // --- MODAL LOGIC ---
+        const modal = document.getElementById('scenario-modal');
+        function showModal(scenario) {
+            document.getElementById('modal-title').textContent = scenario.title;
+            document.getElementById('modal-body').textContent = `เป้าหมาย: ${scenario.target}${/[0-9]/.test(scenario.target)? ' ฟอง/ชม.' : ''} · เงื่อนไข: ${scenario.condition}`;
+            const evidenceEl = document.getElementById('modal-evidence');
+            if(scenario.evidence && scenario.evidence !== '—') {
+                evidenceEl.textContent = `หลักฐานจากข้อมูล: ${scenario.evidence}`;
+                evidenceEl.style.display = 'block';
+            } else {
+                evidenceEl.style.display = 'none';
+            }
+            document.getElementById('modal-details-list').innerHTML = scenario.details.map(d => `<li>${d}</li>`).join('');
+            modal.style.display = 'flex';
+        }
+        function hideModal() {
+            modal.style.display = 'none';
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderHeader();
+            renderKPIs();
+            renderBaseCaseReasons();
+            renderHistogram();
+            renderTables();
+            renderScenarios();
+
+            // Event Listeners for Modal
+            document.getElementById('scenario-table').addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                if (row && row.dataset.index) {
+                    const scenario = scenarios[parseInt(row.dataset.index, 10)];
+                    showModal(scenario);
+                }
+            });
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal || e.target.id === 'modal-close-btn') {
+                    hideModal();
+                }
+            });
+             window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') hideModal();
+            });
+        });
     </script>
 </body>
 </html>
