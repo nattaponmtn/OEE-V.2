@@ -135,7 +135,7 @@
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
                 <div>
-                    <h3 class="text-lg font-semibold text-center text-slate-700 mb-2">แนวโน้ม OEE, A, P, Q รายวัน</h3>
+                    <h3 class="text-lg font-semibold text-center text-slate-700 mb-2">แนวโน้ม OEE รายวัน</h3>
                     <div class="chart-container" style="height: 350px;">
                         <canvas id="oeeComponentsChart"></canvas>
                     </div>
@@ -371,33 +371,88 @@
             document.getElementById('kpi-total-defect-comp').innerHTML = renderComparison(totalDefectsLatest, totalDefectsPrevious, ' ฟอง', false);
             document.getElementById('kpi-defect-rate').textContent = `${defectRateLatest.toFixed(2)}%`;
             
-            // --- NEW CHARTS ---
+            // --- CHARTS ---
+            // Simplified OEE Chart
             if (oeeComponentsChartInstance) oeeComponentsChartInstance.destroy();
             oeeComponentsChartInstance = new Chart(document.getElementById('oeeComponentsChart').getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: latestMonthDataWithOEE.map(d => d.Date.substring(0, 5)),
                     datasets: [
-                        { label: 'OEE (%)', data: latestMonthDataWithOEE.map(d => parsePercent(d.OEE)), borderColor: '#4f46e5', borderWidth: 3, tension: 0.1 },
-                        { label: 'Availability (%)', data: latestMonthDataWithOEE.map(d => parsePercent(d.A)), borderColor: '#06b6d4', borderWidth: 1.5, borderDash: [5, 5], tension: 0.2 },
-                        { label: 'Performance (%)', data: latestMonthDataWithOEE.map(d => parsePercent(d.P)), borderColor: '#f59e0b', borderWidth: 1.5, borderDash: [5, 5], tension: 0.2 },
-                        { label: 'Quality (%)', data: latestMonthDataWithOEE.map(d => parsePercent(d.Q)), borderColor: '#64748b', borderWidth: 1.5, borderDash: [5, 5], tension: 0.2, yAxisID: 'yQuality' }
+                        {
+                            label: 'OEE (%)',
+                            data: latestMonthDataWithOEE.map(d => parsePercent(d.OEE)),
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            borderWidth: 2.5,
+                            tension: 0.3,
+                            fill: true,
+                            pointRadius: 2,
+                            pointBackgroundColor: '#4f46e5'
+                        }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, scales: { y: { beginAtZero: false, title: { display: true, text: 'OEE / A / P (%)' } }, yQuality: { position: 'right', beginAtZero: false, suggestedMin: 99.5, title: { display: true, text: 'Quality (%)' }, grid: { drawOnChartArea: false } } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: { display: true, text: 'OEE (%)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
             });
 
+            // Production and Defect Chart
             if (productionDefectChartInstance) productionDefectChartInstance.destroy();
             productionDefectChartInstance = new Chart(document.getElementById('productionDefectChart').getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: latestMonthData.map(d => d.Date.substring(0, 5)),
                     datasets: [
-                        { label: 'ไข่เสียหาย (ฟอง)', type: 'line', data: latestMonthData.map(d => parseNumber(d['Sum Defect'])), borderColor: '#ef4444', borderWidth: 2, yAxisID: 'yDefects', tension: 0.1, pointRadius: 2 },
-                        { label: 'ผลผลิตรวม (ฟอง)', data: latestMonthData.map(d => parseNumber(d['Total Product'])), backgroundColor: 'rgba(59, 130, 246, 0.7)', yAxisID: 'yProduction' }
+                        {
+                            label: 'ไข่เสียหาย (ฟอง)',
+                            type: 'line',
+                            data: latestMonthData.map(d => parseNumber(d['Sum Defect'])),
+                            borderColor: '#ef4444',
+                            borderWidth: 2,
+                            yAxisID: 'yDefects',
+                            tension: 0.1,
+                            pointRadius: 2
+                        },
+                        {
+                            label: 'ผลผลิตรวม (ฟอง)',
+                            data: latestMonthData.map(d => parseNumber(d['Total Product'])),
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            yAxisID: 'yProduction'
+                        }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, scales: { yProduction: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'ผลผลิต (ฟอง)' } }, yDefects: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'ไข่เสียหาย (ฟอง)' }, grid: { drawOnChartArea: false } } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        yProduction: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'ผลผลิต (ฟอง)' }
+                        },
+                        yDefects: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: { display: true, text: 'ไข่เสียหาย (ฟอง)' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
             });
 
             // --- LOSS TIME ANALYSIS ---
@@ -456,6 +511,3 @@
     </script>
 </body>
 </html>
-
-
-
