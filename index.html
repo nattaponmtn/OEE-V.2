@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OEE Deep Dive & Root Cause Analysis | สิงหาคม 2568</title>
+    <title>OEE Deep Dive & Root Cause Analysis | ตุลาคม 2568</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -195,7 +195,7 @@
                     </div>
                 </div>
                 <div class="p-6 bg-slate-50 rounded-lg">
-                    <h3 class="text-lg font-semibold text-slate-800">บทวิเคราะห์ประสิทธิภาพรายโรงเรือน</h3>
+                    <h3 class="text-lg font-semibold text-slate-800">บทวิเคราะห์เวลาคัดไข่เฉลี่ย (Up Time)</h3>
                     <div id="efficiency-insight" class="mt-2 text-slate-600 space-y-2">
                     </div>
                 </div>
@@ -280,29 +280,27 @@
             const parsePercent = (pStr) => (!pStr || typeof pStr !== 'string') ? 0 : parseFloat(pStr.replace('%', '')) || 0;
             const parseNumber = (nStr) => (!nStr || typeof nStr !== 'string') ? 0 : parseInt(String(nStr).replace(/,/g, ''), 10) || 0;
 
-            // --- DYNAMIC MONTH DETECTION ---
+            // --- DYNAMIC MONTH DETECTION (Updated for Month 10) ---
             const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-            const dates = allData.map(d => {
-                const parts = d.Date.split('/');
-                if (parts.length === 3) {
-                    return new Date(parts[2], parts[1] - 1, parts[0]);
-                }
-                return null;
-            }).filter(d => d && !isNaN(d));
+            
+            // Set target month to 10 (October) and year to 2025 (BE 2568)
+            // Note: JavaScript months are 0-indexed (0=Jan, 9=Oct)
+            const targetMonthIndex = 9; // 9 = October (Month 10)
+            const targetYear = 2025; 
 
-            const maxDate = new Date(Math.max.apply(null, dates));
-            const currentMonth = maxDate.getMonth() + 1;
-            const currentYear = maxDate.getFullYear();
-            const currentMonthName = thaiMonths[maxDate.getMonth()];
+            const maxDate = new Date(targetYear, targetMonthIndex, 1); // Use the 1st of the month
+            const currentMonth = maxDate.getMonth() + 1;         // 10
+            const currentYear = maxDate.getFullYear();            // 2025
+            const currentMonthName = thaiMonths[maxDate.getMonth()]; // ตุลาคม
 
             const prevMonthDate = new Date(maxDate);
-            prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
+            prevMonthDate.setMonth(prevMonthDate.getMonth() - 1); // Sets to September
             const previousMonth = prevMonthDate.getMonth() + 1;
             const previousYear = prevMonthDate.getFullYear();
             const previousMonthShortName = thaiMonths[prevMonthDate.getMonth()].substring(0, 3) + '.';
 
-            const currentMonthString = `/${String(currentMonth).padStart(2, '0')}/${currentYear}`;
-            const previousMonthString = `/${String(previousMonth).padStart(2, '0')}/${previousYear}`;
+            const currentMonthString = `/${String(currentMonth).padStart(2, '0')}/${currentYear}`; // /10/2025
+            const previousMonthString = `/${String(previousMonth).padStart(2, '0')}/${previousYear}`; // /09/2025
 
             const latestMonthData = allData.filter(d => d.Date && d.Date.endsWith(currentMonthString));
             const previousMonthData = allData.filter(d => d.Date && d.Date.endsWith(previousMonthString));
@@ -471,10 +469,8 @@
             const calculateCoopAvgTimes = (data) => {
                 const avgs = [];
                 for (let i = 1; i <= 6; i++) {
-                    if (i === 1) { // H1 is always 0 now
-                        avgs.push(0);
-                        continue;
-                    }
+                    // *** FIX: Removed the hardcoded 'if (i === 1)' block ***
+                    // This logic will now apply to all coops, including H1
                     const coopData = data.filter(day => timeToHours(day[`H${i}_Oparation`]) > 0);
                     const totalTime = coopData.reduce((sum, day) => sum + timeToHours(day[`H${i}_Oparation`]), 0);
                     avgs.push(coopData.length > 0 ? totalTime / coopData.length : 0);
@@ -487,7 +483,36 @@
             coopTimeChartInstance = new Chart(document.getElementById('coopTimeChart').getContext('2d'), {
                 type: 'bar',
                 data: { labels: coopTimeData.labels, datasets: [ { label: currentMonthName, data: coopTimeData.thisMonth, backgroundColor: '#0d9488' }, { label: thaiMonths[previousMonth-1], data: coopTimeData.lastMonth, backgroundColor: '#a1a1aa' } ] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'เวลาเฉลี่ย (ชม.)' } } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        y: { 
+                            title: { display: true, text: 'เวลาเฉลี่ย (ชม.)' },
+                            ticks: {
+                                callback: function(value) {
+                                    return hoursToTimeString(value).substring(0, 5); // แสดงเป็น HH:MM
+                                }
+                            }
+                        } 
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += hoursToTimeString(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
             });
 
             // Efficiency analysis based on Avg. Up Time
@@ -511,3 +536,4 @@
     </script>
 </body>
 </html>
+
