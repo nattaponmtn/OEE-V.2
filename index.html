@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OEE Deep Dive & Root Cause Analysis | ตุลาคม 2568</title>
+    <title>OEE Deep Dive & Root Cause Analysis | พฤศจิกายน 2568</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -280,27 +280,27 @@
             const parsePercent = (pStr) => (!pStr || typeof pStr !== 'string') ? 0 : parseFloat(pStr.replace('%', '')) || 0;
             const parseNumber = (nStr) => (!nStr || typeof nStr !== 'string') ? 0 : parseInt(String(nStr).replace(/,/g, ''), 10) || 0;
 
-            // --- DYNAMIC MONTH DETECTION (Updated for Month 10) ---
+            // --- DYNAMIC MONTH DETECTION (Updated for Month 11) ---
             const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
             
-            // Set target month to 10 (October) and year to 2025 (BE 2568)
-            // Note: JavaScript months are 0-indexed (0=Jan, 9=Oct)
-            const targetMonthIndex = 9; // 9 = October (Month 10)
+            // Set target month to 11 (November) and year to 2025 (BE 2568)
+            // Note: JavaScript months are 0-indexed (0=Jan, 10=Nov)
+            const targetMonthIndex = 10; // 10 = November (Month 11)
             const targetYear = 2025; 
 
             const maxDate = new Date(targetYear, targetMonthIndex, 1); // Use the 1st of the month
-            const currentMonth = maxDate.getMonth() + 1;         // 10
+            const currentMonth = maxDate.getMonth() + 1;         // 11
             const currentYear = maxDate.getFullYear();            // 2025
-            const currentMonthName = thaiMonths[maxDate.getMonth()]; // ตุลาคม
+            const currentMonthName = thaiMonths[maxDate.getMonth()]; // พฤศจิกายน
 
             const prevMonthDate = new Date(maxDate);
-            prevMonthDate.setMonth(prevMonthDate.getMonth() - 1); // Sets to September
+            prevMonthDate.setMonth(prevMonthDate.getMonth() - 1); // Sets to October
             const previousMonth = prevMonthDate.getMonth() + 1;
             const previousYear = prevMonthDate.getFullYear();
             const previousMonthShortName = thaiMonths[prevMonthDate.getMonth()].substring(0, 3) + '.';
 
-            const currentMonthString = `/${String(currentMonth).padStart(2, '0')}/${currentYear}`; // /10/2025
-            const previousMonthString = `/${String(previousMonth).padStart(2, '0')}/${previousYear}`; // /09/2025
+            const currentMonthString = `/${String(currentMonth).padStart(2, '0')}/${currentYear}`; // /11/2025
+            const previousMonthString = `/${String(previousMonth).padStart(2, '0')}/${previousYear}`; // /10/2025
 
             const latestMonthData = allData.filter(d => d.Date && d.Date.endsWith(currentMonthString));
             const previousMonthData = allData.filter(d => d.Date && d.Date.endsWith(previousMonthString));
@@ -536,4 +536,3 @@
     </script>
 </body>
 </html>
-
