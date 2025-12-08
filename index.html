@@ -489,26 +489,28 @@
         function setText(id, val) { const el = document.getElementById(id); if(el) el.innerText = val; }
 
         // --- TIME HELPER ---
-        // NEW Helper: To seconds precision
         function timeToSecs(t) {
             if(!t) return 0;
             const p = t.split(':').map(Number);
             return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0);
         }
-        // Helper: Seconds to HH:MM:SS
         function secsToTime(s) {
             const h = Math.floor(s/3600);
             const m = Math.floor((s%3600)/60);
             const sec = Math.round(s%60);
             return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
         }
-        
-        // Old helpers (kept for compatibility with Loss Chart)
         function timeToMins(t) { return timeToSecs(t)/60; }
         function minsToTime(m) {
             const h = Math.floor(m/60);
             const min = Math.round(m % 60);
             return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+        }
+        
+        function decimalHoursToHM(val) {
+             const h = Math.floor(val);
+             const m = Math.round((val - h) * 60);
+             return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} ชม.`;
         }
 
         // --- DATA ---
@@ -532,6 +534,13 @@
             });
             rawData = data;
 
+            // FIX: Sort Data by Date FIRST to ensure alignment
+            data.sort((a, b) => {
+                const da = a.Date.split('/').reverse().join('');
+                const db = b.Date.split('/').reverse().join('');
+                return da.localeCompare(db);
+            });
+
             // Parsers
             const num = (v) => parseFloat((String(v)||'0').replace(/,/g,'').replace('%','')) || 0;
             const hr = (t) => { if(!t)return 0; const p=t.split(':').map(Number); return (p[0]||0)+(p[1]||0)/60 + (p[2]||0)/3600; };
@@ -539,6 +548,57 @@
 
             const curData = data.filter(d => d.Date.endsWith('/11/2025'));
             const prevData = data.filter(d => d.Date.endsWith('/10/2025'));
+            
+            // --- GENERATE FULL MONTH TIMELINE (Calendar Mapping) ---
+            // Create list of 1-30 Nov 2025
+            const fullMonthDates = [];
+            for (let i = 1; i <= 30; i++) {
+                fullMonthDates.push(`${String(i).padStart(2, '0')}/11`);
+            }
+
+            // Map Actual Data to Calendar
+            // Find data for each day. If missing, put null/0.
+            const chartDataOEE = [];
+            const chartDataP = [];
+            const chartDataA = [];
+            const chartDataSpeed = [];
+            const chartBubbles = [];
+
+            fullMonthDates.forEach(dateStr => {
+                // Find row in curData that matches "DD/MM/2025"
+                const fullDate = `${dateStr}/2025`;
+                const d = curData.find(row => row.Date === fullDate);
+
+                if (d) {
+                    chartDataOEE.push(num(d.OEE));
+                    chartDataP.push(num(d.P));
+                    chartDataA.push(num(d.A));
+                    chartDataSpeed.push(num(d['Product/H']));
+                    
+                    // Bubble Logic: Only add object if loss exists, otherwise null
+                    // CRITICAL FIX: Add object with y:null when no loss to keep alignment with index and avoid "reading x of null"
+                    if (d['BD Time'] && d['BD Time'].trim()) {
+                        chartBubbles.push({ 
+                            x: dateStr, 
+                            y: num(d['Product/H']), 
+                            r: Math.min(Math.max(hr(d['BD Time'])*6, 4), 25), 
+                            note: d.Note, 
+                            dur: hr(d['BD Time']) 
+                        });
+                    } else {
+                        chartBubbles.push({ x: dateStr, y: null, r: 0 }); // Safe empty bubble
+                    }
+                } else {
+                    // Missing Day -> Null/Gap for ALL
+                    chartDataOEE.push(null);
+                    chartDataP.push(null);
+                    chartDataA.push(null);
+                    chartDataSpeed.push(null);
+                    chartBubbles.push({ x: dateStr, y: null, r: 0 }); // Safe empty bubble
+                }
+            });
+
+            // Re-define base vars for KPIs (still use actual data)
             const curOEE = curData.filter(d => d.OEE);
             const prevOEE = prevData.filter(d => d.OEE);
 
@@ -601,7 +661,13 @@
             animateValue(document.getElementById('kpi-total-loss'), 0, totalLossHrs, 1000, (v)=>v.toFixed(2));
             animateValue(document.getElementById('kpi-total-events'), 0, lossEvents.length, 1000, (v)=>v);
 
-            const sortedLoss = [...lossEvents].sort((a,b)=>hr(b['BD Time'])-hr(a['BD Time'])).slice(0,10);
+            // FIX: Sort Loss Table by DATE Chronologically
+            const sortedLoss = [...lossEvents].sort((a,b) => {
+                 const da = a.Date.split('/').reverse().join('');
+                 const db = b.Date.split('/').reverse().join('');
+                 return da.localeCompare(db);
+            });
+            
             setHtml('table-loss-top', sortedLoss.map(l => `
                 <tr class="align-top border-b border-[var(--card-border)] last:border-0">
                     <td class="font-mono text-xs text-[var(--text-sub)] py-2">${l.Date.substring(0,5)}</td>
@@ -618,12 +684,12 @@
             const avgFinishMins = validWorkDays.length ? totalFinishMins / validWorkDays.length : 0;
             setHtml('det-avg-finish', minsToTime(avgFinishMins) + ' น.');
 
-            // B) Avg Operation Time (Corrected: Use seconds precision)
+            // B) Avg Operation Time (Corrected: Use 'Oparation Time' column)
+            // Filter days that have "Oparation Time" data
             const validOpDays = curData.filter(d => d['Oparation Time'] && d['Oparation Time'] !== '-' && timeToSecs(d['Oparation Time']) > 0);
             const totalOpSecs = validOpDays.reduce((s, d) => s + timeToSecs(d['Oparation Time']), 0);
             const avgOpSecs = validOpDays.length ? totalOpSecs / validOpDays.length : 0;
-            
-            setHtml('det-avg-op', secsToTime(avgOpSecs)); // Display HH:MM:SS
+            setHtml('det-avg-op', secsToTime(avgOpSecs)); 
             setHtml('det-avg-op-count', `(เฉลี่ย ${validOpDays.length} วัน)`);
 
             // C) Max Finish Time
@@ -641,24 +707,30 @@
             setHtml('det-max-finish', maxFinishStr);
             setHtml('det-max-finish-date', `วันที่ ${maxFinishDate}`);
 
-            // D) Avg Eggs & Defect per Day
+            // D) Avg Eggs & Defect per Day (Corrected: Use specific columns)
+            // Avg Eggs: 'Total producct_Machine'
             const validEggDays = curData.filter(d => num(d['Total producct_Machine']) > 0);
             const totalEggs = validEggDays.reduce((s, d) => s + num(d['Total producct_Machine']), 0);
             const avgEggs = validEggDays.length ? totalEggs / validEggDays.length : 0;
             
+            // Avg Defect: 'Sum Defect'
             const validDefDays = curData.filter(d => num(d['Sum Defect']) > 0);
             const totalDefs = validDefDays.reduce((s, d) => s + num(d['Sum Defect']), 0);
             const avgDef = validDefDays.length ? totalDefs / validDefDays.length : 0;
 
-            animateValue(document.getElementById('det-avg-egg'), 0, avgEggs, 1000, (v)=>Math.round(v).toLocaleString());
-            setHtml('det-avg-egg-count', `ฟอง/วัน (${validEggDays.length} วัน)`);
-            
-            animateValue(document.getElementById('det-avg-def'), 0, avgDef, 1000, (v)=>Math.round(v).toLocaleString());
-            setHtml('det-avg-def-count', `เสีย/วัน (${validDefDays.length} วัน)`);
+            animateValue(document.getElementById('det-avg-egg'), 0, avgEggs, 1000, (v)=>parseInt(v).toLocaleString());
+            animateValue(document.getElementById('det-avg-def'), 0, avgDef, 1000, (v)=>parseInt(v).toLocaleString());
 
 
             // --- 5. DATA TABLE ---
-            setHtml('table-full', curData.map(d => {
+            // FIX: Ensure table is also sorted by date chronologically
+            const sortedData = [...curData].sort((a,b) => {
+                 const da = a.Date.split('/').reverse().join('');
+                 const db = b.Date.split('/').reverse().join('');
+                 return da.localeCompare(db);
+            });
+
+            setHtml('table-full', sortedData.map(d => {
                 const oee = num(d.OEE);
                 const status = oee >= 80 ? 'status-success' : oee >= 60 ? 'status-warning' : 'status-danger';
                 return `
@@ -680,53 +752,65 @@
             const txtCol = theme==='dark'?'#94a3b8':'#64748b';
             Chart.defaults.color = txtCol;
             Chart.defaults.borderColor = gridCol;
-            const labels = curOEE.map(d => d.Date.substring(0,5));
-
-            // Chart OEE
+            
+            // Chart OEE (Uses Full Month Mapped Data)
             if(document.getElementById('chartOEE')) {
                 if(charts.oee) charts.oee.destroy();
                 charts.oee = new Chart(document.getElementById('chartOEE'), {
                     type: 'line',
                     data: {
-                        labels,
+                        labels: fullMonthDates, // Use 1-30 Nov
                         datasets: [
-                            { label: 'OEE', data: curOEE.map(d=>num(d.OEE)), borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', fill: true, tension: 0.4, pointRadius: 3 },
-                            { label: 'P', data: curOEE.map(d=>num(d.P)), borderColor: '#f59e0b', borderDash:[4,4], borderWidth: 1.5, pointRadius: 0 },
-                            { label: 'A', data: curOEE.map(d=>num(d.A)), borderColor: '#06b6d4', borderDash:[4,4], borderWidth: 1.5, pointRadius: 0 }
+                            { label: 'OEE', data: chartDataOEE, borderColor: '#a855f7', backgroundColor: 'rgba(168, 85, 247, 0.1)', fill: true, tension: 0.4, pointRadius: 3 },
+                            { label: 'P', data: chartDataP, borderColor: '#f59e0b', borderDash:[4,4], borderWidth: 1.5, pointRadius: 0 },
+                            { label: 'A', data: chartDataA, borderColor: '#06b6d4', borderDash:[4,4], borderWidth: 1.5, pointRadius: 0 }
                         ]
                     },
                     options: { 
-                        responsive: true, maintainAspectRatio: false, 
-                        plugins: { legend: { labels: { usePointStyle: true, boxWidth: 8 } } },
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: { 
+                            legend: { labels: { usePointStyle: true, boxWidth: 8 } },
+                            tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw ? ctx.raw.toFixed(1)+'%' : 'No Data'}` } }
+                        },
                         scales: { x: { grid: { display: false } }, y: { beginAtZero: true, max: 100, grid: { color: gridCol } } }
                     }
                 });
             }
 
-            // Chart Speed vs Loss
-            const bubbles = lossEvents.map(l => {
-                const i = labels.indexOf(l.Date.substring(0,5));
-                if(i===-1) return null;
-                const spd = num(curOEE[i]['Product/H']);
-                const dur = hr(l['BD Time']);
-                return { x: l.Date.substring(0,5), y: spd, r: Math.min(Math.max(dur*6, 4), 25), note: l.Note, dur: dur };
-            }).filter(x=>x);
-
+            // Chart Speed vs Loss (Uses Full Month Mapped Data)
             if(document.getElementById('chartSpeedLoss')) {
                 if(charts.speed) charts.speed.destroy();
                 charts.speed = new Chart(document.getElementById('chartSpeedLoss'), {
                     type: 'line',
                     data: {
-                        labels,
+                        labels: fullMonthDates, // Use 1-30 Nov
                         datasets: [
-                            { type: 'bubble', label: 'Loss Event', data: bubbles, backgroundColor: 'rgba(239,68,68,0.7)', borderColor: '#ef4444' },
-                            { type: 'line', label: 'Speed', data: curOEE.map(d=>num(d['Product/H'])), borderColor: '#10b981', tension: 0.3, borderWidth: 2, pointRadius: 0 }
+                            { type: 'bubble', label: 'Loss Event', data: chartBubbles, backgroundColor: 'rgba(239,68,68,0.7)', borderColor: '#ef4444' },
+                            { type: 'line', label: 'Speed', data: chartDataSpeed, borderColor: '#a855f7', tension: 0.3, borderWidth: 2, pointRadius: 0 }
                         ]
                     },
                     options: { 
-                        responsive: true, maintainAspectRatio: false,
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
                         scales: { x: { grid: { display: false } } },
-                        plugins: { tooltip: { callbacks: { label: c=> c.dataset.type==='bubble'?`${c.raw.note} (${c.raw.dur.toFixed(2)}hr)`:`Speed: ${Math.round(c.raw).toLocaleString()}` } } }
+                        plugins: { 
+                            tooltip: { 
+                                callbacks: { 
+                                    label: c => {
+                                        if(c.dataset.type === 'bubble') {
+                                            // Handle "empty bubble" gracefully
+                                            if (c.raw.y === null) return null;
+                                            return `Loss: ${c.raw.note} (${decimalHoursToHM(c.raw.dur)})`;
+                                        }
+                                        if(c.raw === null) return null;
+                                        return `Speed: ${Math.round(c.raw).toLocaleString()} Eggs/Hr`;
+                                    }
+                                } 
+                            } 
+                        }
                     }
                 });
             }
