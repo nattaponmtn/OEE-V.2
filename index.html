@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Production Insights | Nov 2025</title>
+    <title>Smart Production Insights | Jun - Nov 2025</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -11,7 +11,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        /* --- THEME VARIABLES --- */
+        /* --- THEME VARIABLES (Original V13 Style) --- */
         :root {
             --bg-main: #f1f5f9;
             --card-bg: #ffffff;
@@ -198,7 +198,7 @@
                     <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 leading-tight">
                         Smart Production Insights
                     </h1>
-                    <p class="text-[var(--text-sub)] text-sm font-medium mt-0.5">Egg Grading Performance • November 2025</p>
+                    <p class="text-[var(--text-sub)] text-sm font-medium mt-0.5">Yearly Review (June - November 2025)</p>
                 </div>
             </div>
             
@@ -272,7 +272,7 @@
                 <!-- Left: OEE Trend Chart -->
                 <div class="glass-card col-span-8">
                     <div class="card-title mb-4">
-                        <i class="fa-solid fa-chart-area text-blue-500"></i> แนวโน้มประสิทธิภาพรายวัน
+                        <i class="fa-solid fa-chart-area text-blue-500"></i> แนวโน้มประสิทธิภาพ (มิ.ย. - พ.ย.)
                     </div>
                     <div class="chart-box">
                         <canvas id="chartOEE"></canvas>
@@ -281,7 +281,7 @@
 
                 <!-- Right: Production Summary -->
                 <div class="glass-card col-span-4 flex flex-col gap-4">
-                    <div class="card-title mb-2"><i class="fa-solid fa-box-open text-emerald-500"></i> สรุปยอดการผลิต</div>
+                    <div class="card-title mb-2"><i class="fa-solid fa-box-open text-emerald-500"></i> สรุปยอดการผลิต (6 เดือน)</div>
                     
                     <div class="sub-card flex justify-between items-center">
                         <div>
@@ -340,11 +340,11 @@
                     <div class="sec-label"><i class="fa-solid fa-egg text-yellow-500"></i> ค่าเฉลี่ยต่อวัน</div>
                     <div class="flex justify-between items-end mt-1">
                         <div>
-                            <div class="text-2xl text-[var(--text-main)] font-bold font-['Inter']" id="det-avg-egg">0</div>
+                            <div class="text-xl text-[var(--text-main)] font-bold font-['Inter']" id="det-avg-egg">0</div>
                             <div class="text-xs text-[var(--text-sub)]" id="det-avg-egg-count">ฟอง</div>
                         </div>
                         <div class="text-right">
-                            <div class="text-2xl text-red-400 font-bold font-['Inter']" id="det-avg-def">0</div>
+                            <div class="text-xl text-red-400 font-bold font-['Inter']" id="det-avg-def">0</div>
                             <div class="text-xs text-[var(--text-sub)]" id="det-avg-def-count">เสีย</div>
                         </div>
                     </div>
@@ -355,7 +355,7 @@
             <div class="grid-12">
                 <div class="glass-card col-span-8">
                     <div class="flex justify-between items-center mb-4">
-                        <div class="card-title mb-0"><i class="fa-solid fa-bolt text-yellow-500"></i> Speed vs Loss Correlation</div>
+                        <div class="card-title mb-0"><i class="fa-solid fa-bolt text-yellow-500"></i> Speed vs Loss Correlation (6 Months)</div>
                     </div>
                     <div class="chart-box-detail">
                         <canvas id="chartSpeedLoss"></canvas>
@@ -375,7 +375,7 @@
             <div class="grid-12">
                 <!-- Full Table -->
                 <div class="glass-card col-span-8">
-                    <div class="card-title mb-4"><i class="fa-solid fa-table-cells text-blue-500"></i> Daily Production Log</div>
+                    <div class="card-title mb-4"><i class="fa-solid fa-table-cells text-blue-500"></i> Daily Production Log (All Data)</div>
                     <div class="table-container h-table-fixed">
                         <table id="table-full-el">
                             <thead>
@@ -397,7 +397,7 @@
 
                 <!-- Loss Analysis -->
                 <div class="glass-card col-span-4">
-                    <div class="card-title mb-4"><i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Loss Analysis</div>
+                    <div class="card-title mb-4"><i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Loss Analysis (6 Months)</div>
                     
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <div class="text-center p-3 sub-card rounded-lg">
@@ -534,7 +534,7 @@
             });
             rawData = data;
 
-            // FIX: Sort Data by Date FIRST to ensure alignment
+            // FIX: Sort Data by Date FIRST
             data.sort((a, b) => {
                 const da = a.Date.split('/').reverse().join('');
                 const db = b.Date.split('/').reverse().join('');
@@ -546,26 +546,41 @@
             const hr = (t) => { if(!t)return 0; const p=t.split(':').map(Number); return (p[0]||0)+(p[1]||0)/60 + (p[2]||0)/3600; };
             const fmt = (n) => n.toLocaleString();
 
-            const curData = data.filter(d => d.Date.endsWith('/11/2025'));
-            const prevData = data.filter(d => d.Date.endsWith('/10/2025'));
+            // *** NEW FILTER LOGIC: Months 6-11 ***
+            const targetMonths = [6, 7, 8, 9, 10, 11];
             
-            // --- GENERATE FULL MONTH TIMELINE (Calendar Mapping) ---
-            // Create list of 1-30 Nov 2025
-            const fullMonthDates = [];
-            for (let i = 1; i <= 30; i++) {
-                fullMonthDates.push(`${String(i).padStart(2, '0')}/11`);
+            const curData = data.filter(row => {
+                if(!row.Date) return false;
+                const parts = row.Date.split('/');
+                if(parts.length !== 3) return false;
+                const m = parseInt(parts[1], 10);
+                const y = parseInt(parts[2], 10);
+                return y === 2025 && targetMonths.includes(m);
+            });
+
+            const curOEE = curData.filter(d => d.OEE);
+            // No previous period comparison for this 6-month view
+            
+            // --- GENERATE FULL 6-MONTH TIMELINE (Jun-Nov) ---
+            const fullDates = [];
+            // Generate dates from 2025-06-01 to 2025-11-30
+            const startDate = new Date(2025, 5, 1); // Month 0-indexed (5 = June)
+            const endDate = new Date(2025, 10, 30); // 10 = Nov
+            
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                fullDates.push(`${day}/${month}`);
             }
 
-            // Map Actual Data to Calendar
-            // Find data for each day. If missing, put null/0.
+            // Map Data
             const chartDataOEE = [];
             const chartDataP = [];
             const chartDataA = [];
             const chartDataSpeed = [];
             const chartBubbles = [];
 
-            fullMonthDates.forEach(dateStr => {
-                // Find row in curData that matches "DD/MM/2025"
+            fullDates.forEach(dateStr => {
                 const fullDate = `${dateStr}/2025`;
                 const d = curData.find(row => row.Date === fullDate);
 
@@ -575,8 +590,6 @@
                     chartDataA.push(num(d.A));
                     chartDataSpeed.push(num(d['Product/H']));
                     
-                    // Bubble Logic: Only add object if loss exists, otherwise null
-                    // CRITICAL FIX: Add object with y:null when no loss to keep alignment with index and avoid "reading x of null"
                     if (d['BD Time'] && d['BD Time'].trim()) {
                         chartBubbles.push({ 
                             x: dateStr, 
@@ -586,89 +599,97 @@
                             dur: hr(d['BD Time']) 
                         });
                     } else {
-                        chartBubbles.push({ x: dateStr, y: null, r: 0 }); // Safe empty bubble
+                        chartBubbles.push({ x: dateStr, y: null, r: 0 });
                     }
                 } else {
-                    // Missing Day -> Null/Gap for ALL
                     chartDataOEE.push(null);
                     chartDataP.push(null);
                     chartDataA.push(null);
                     chartDataSpeed.push(null);
-                    chartBubbles.push({ x: dateStr, y: null, r: 0 }); // Safe empty bubble
+                    chartBubbles.push({ x: dateStr, y: null, r: 0 });
                 }
             });
 
-            // Re-define base vars for KPIs (still use actual data)
-            const curOEE = curData.filter(d => d.OEE);
-            const prevOEE = prevData.filter(d => d.OEE);
-
-            // --- 1. OVERVIEW KPIs ---
+            // --- 1. OVERVIEW KPIs (Calculated from 6 Months) ---
             const avg = (d,k) => d.length ? d.reduce((s,x)=>s+num(x[k]),0)/d.length : 0;
             const kpis = { oee: avg(curOEE,'OEE'), a: avg(curOEE,'A'), p: avg(curOEE,'P'), q: avg(curOEE,'Q') };
-            const pkpis = { oee: avg(prevOEE,'OEE'), a: avg(prevOEE,'A'), p: avg(prevOEE,'P'), q: avg(prevOEE,'Q') };
             
             const getSpeed = (d) => { const v=d.filter(x=>num(x['Product/H'])>0); return v.length?v.reduce((s,x)=>s+num(x['Product/H']),0)/v.length:0; };
             const curSpd = getSpeed(curData);
-            const prevSpd = getSpeed(prevData);
 
+            // Compare: Nov vs Jun (End vs Start of period) for Trend
+            // Or just hide trend if not relevant. I will keep it but make it compare Nov vs Oct within the set?
+            // Let's just make trend "0" to hide the badge movement or compare last month vs first month.
+            // Let's hide the trend text to be safe as user didn't ask for specific comparison logic.
+            // Actually, I'll calculate trend as Last Month (Nov) vs First Month (Jun) to show progress.
+            // Finding Nov data
+            const novData = curData.filter(d => d.Date.endsWith('/11/2025'));
+            const junData = curData.filter(d => d.Date.endsWith('/06/2025'));
+            
+            const novOEE = avg(novData.filter(d=>d.OEE), 'OEE');
+            const junOEE = avg(junData.filter(d=>d.OEE), 'OEE');
+            
             const renderTrend = (c,p,u='', reverse=false) => {
                 const d = c-p;
                 const isUp = reverse ? d<0 : d>=0;
                 const cls = isUp ? 'trend-up' : 'trend-down';
                 const ico = d>=0 ? 'up' : 'down';
-                return `<span class="trend-badge ${cls}"><i class="fa-solid fa-caret-${ico}"></i> ${Math.abs(d).toFixed(1)}${u}</span> <span class="text-[var(--text-sub)] text-xs hidden lg:inline">vs last month</span>`;
+                // Show "vs Jun"
+                return `<span class="trend-badge ${cls}"><i class="fa-solid fa-caret-${ico}"></i> ${Math.abs(d).toFixed(1)}${u}</span> <span class="text-[var(--text-sub)] text-xs hidden lg:inline">vs Jun</span>`;
             };
 
             animateValue(document.getElementById('kpi-oee'), 0, kpis.oee, 1000, (v)=>v.toFixed(1)+'%');
-            setHtml('kpi-oee-comp', renderTrend(kpis.oee, pkpis.oee, '%'));
+            setHtml('kpi-oee-comp', renderTrend(novOEE, junOEE, '%'));
             document.getElementById('oee-bar').style.width = kpis.oee + '%';
 
             animateValue(document.getElementById('kpi-a'), 0, kpis.a, 1000, (v)=>v.toFixed(1)+'%');
-            setHtml('kpi-a-comp', renderTrend(kpis.a, pkpis.a, '%'));
+            // Simply use same trend logic for others or hide
+            setHtml('kpi-a-comp', ''); // Hide detailed trend for sub-KPIs to keep cleaner
 
             animateValue(document.getElementById('kpi-p'), 0, kpis.p, 1000, (v)=>v.toFixed(1)+'%');
-            setHtml('kpi-p-comp', renderTrend(kpis.p, pkpis.p, '%'));
+            setHtml('kpi-p-comp', '');
 
             animateValue(document.getElementById('kpi-q'), 0, kpis.q, 1000, (v)=>v.toFixed(1)+'%');
-            setHtml('kpi-q-comp', renderTrend(kpis.q, pkpis.q, '%'));
+            setHtml('kpi-q-comp', '');
 
             animateValue(document.getElementById('kpi-prod'), 0, curSpd, 1200, (v)=>Math.round(v).toLocaleString());
-            setHtml('kpi-prod-comp', renderTrend(curSpd, prevSpd));
+            setHtml('kpi-prod-comp', '');
 
 
-            // --- 2. SUMMARY ---
+            // --- 2. SUMMARY (Aggregated 6 Months) ---
             const sum = (d,k) => d.reduce((s,x)=>s+num(x[k]),0);
             const tot = sum(curData, 'Total Product');
             const def = sum(curData, 'Sum Defect');
-            const pTot = sum(prevData, 'Total Product');
-            const pDef = sum(prevData, 'Sum Defect');
             const rate = tot ? (def/tot)*100 : 0;
 
             animateValue(document.getElementById('kpi-total-eggs'), 0, tot, 1500, (v)=>Math.round(v).toLocaleString());
-            setHtml('kpi-total-eggs-comp', renderTrend(tot, pTot));
+            setHtml('kpi-total-eggs-comp', ''); // No trend comparison
 
             animateValue(document.getElementById('kpi-total-defect'), 0, def, 1500, (v)=>Math.round(v).toLocaleString());
-            setHtml('kpi-total-defect-comp', renderTrend(def, pDef, '', true));
+            setHtml('kpi-total-defect-comp', '');
 
             setText('kpi-defect-rate', rate.toFixed(2)+'%');
             document.getElementById('defect-bar').style.width = Math.min(rate*10, 100) + '%';
 
 
-            // --- 3. LOSS ---
+            // --- 3. LOSS (Aggregated 6 Months) ---
             const lossEvents = curData.filter(d=>d['BD Time']&&d['BD Time'].trim());
             const totalLossHrs = lossEvents.reduce((s,d)=>s+hr(d['BD Time']), 0);
             
             animateValue(document.getElementById('kpi-total-loss'), 0, totalLossHrs, 1000, (v)=>v.toFixed(2));
             animateValue(document.getElementById('kpi-total-events'), 0, lossEvents.length, 1000, (v)=>v);
 
-            // FIX: Sort Loss Table by DATE Chronologically
+            // Sort Loss Table Chronologically
             const sortedLoss = [...lossEvents].sort((a,b) => {
                  const da = a.Date.split('/').reverse().join('');
                  const db = b.Date.split('/').reverse().join('');
                  return da.localeCompare(db);
             });
             
-            setHtml('table-loss-top', sortedLoss.map(l => `
+            // Limit table to top 20 or show all? 6 months is huge. Let's show top 50 recent/worst.
+            // Showing all might slow down DOM. Let's show top 20 by duration to be useful.
+            // Or chronological 50. Let's do chronological top 50.
+            setHtml('table-loss-top', sortedLoss.slice(0, 50).map(l => `
                 <tr class="align-top border-b border-[var(--card-border)] last:border-0">
                     <td class="font-mono text-xs text-[var(--text-sub)] py-2">${l.Date.substring(0,5)}</td>
                     <td class="text-sm py-2">${l.Note}</td>
@@ -676,26 +697,23 @@
                 </tr>
             `).join(''));
 
-            // --- 4. DETAILS SUPPLEMENTARY METRICS (UPDATED) ---
+            // --- 4. DETAILS SUPPLEMENTARY METRICS ---
             const validWorkDays = curData.filter(d => d['Start Time'] && d['Finish Time'] && d['Start Time'] !== '-' && d['Finish Time'] !== '-');
             
-            // A) Avg Finish Time
+            // Avg Finish Time
             const totalFinishMins = validWorkDays.reduce((s, d) => s + timeToMins(d['Finish Time']), 0);
             const avgFinishMins = validWorkDays.length ? totalFinishMins / validWorkDays.length : 0;
             setHtml('det-avg-finish', minsToTime(avgFinishMins) + ' น.');
 
-            // B) Avg Operation Time (Corrected: Use 'Oparation Time' column)
-            // Filter days that have "Oparation Time" data
+            // Avg Op Time
             const validOpDays = curData.filter(d => d['Oparation Time'] && d['Oparation Time'] !== '-' && timeToSecs(d['Oparation Time']) > 0);
             const totalOpSecs = validOpDays.reduce((s, d) => s + timeToSecs(d['Oparation Time']), 0);
             const avgOpSecs = validOpDays.length ? totalOpSecs / validOpDays.length : 0;
             setHtml('det-avg-op', secsToTime(avgOpSecs)); 
             setHtml('det-avg-op-count', `(เฉลี่ย ${validOpDays.length} วัน)`);
 
-            // C) Max Finish Time
-            let maxFinishMins = -1;
-            let maxFinishStr = '-';
-            let maxFinishDate = '-';
+            // Max Finish
+            let maxFinishMins = -1, maxFinishStr = '-', maxFinishDate = '-';
             validWorkDays.forEach(d => {
                 const fm = timeToMins(d['Finish Time']);
                 if(fm > maxFinishMins) {
@@ -707,23 +725,23 @@
             setHtml('det-max-finish', maxFinishStr);
             setHtml('det-max-finish-date', `วันที่ ${maxFinishDate}`);
 
-            // D) Avg Eggs & Defect per Day (Corrected: Use specific columns)
-            // Avg Eggs: 'Total producct_Machine'
+            // Avg Eggs/Defect
             const validEggDays = curData.filter(d => num(d['Total producct_Machine']) > 0);
             const totalEggs = validEggDays.reduce((s, d) => s + num(d['Total producct_Machine']), 0);
             const avgEggs = validEggDays.length ? totalEggs / validEggDays.length : 0;
             
-            // Avg Defect: 'Sum Defect'
             const validDefDays = curData.filter(d => num(d['Sum Defect']) > 0);
             const totalDefs = validDefDays.reduce((s, d) => s + num(d['Sum Defect']), 0);
             const avgDef = validDefDays.length ? totalDefs / validDefDays.length : 0;
 
             animateValue(document.getElementById('det-avg-egg'), 0, avgEggs, 1000, (v)=>parseInt(v).toLocaleString());
+            setHtml('det-avg-egg-count', `ฟอง/วัน (${validEggDays.length} วัน)`);
             animateValue(document.getElementById('det-avg-def'), 0, avgDef, 1000, (v)=>parseInt(v).toLocaleString());
+            setHtml('det-avg-def-count', `เสีย/วัน (${validDefDays.length} วัน)`);
 
 
             // --- 5. DATA TABLE ---
-            // FIX: Ensure table is also sorted by date chronologically
+            // Sort chronologically
             const sortedData = [...curData].sort((a,b) => {
                  const da = a.Date.split('/').reverse().join('');
                  const db = b.Date.split('/').reverse().join('');
@@ -753,22 +771,21 @@
             Chart.defaults.color = txtCol;
             Chart.defaults.borderColor = gridCol;
             
-            // Chart OEE (Uses Full Month Mapped Data)
+            // Chart OEE (6 Months)
             if(document.getElementById('chartOEE')) {
                 if(charts.oee) charts.oee.destroy();
                 charts.oee = new Chart(document.getElementById('chartOEE'), {
                     type: 'line',
                     data: {
-                        labels: fullMonthDates, // Use 1-30 Nov
+                        labels: fullDates,
                         datasets: [
-                            { label: 'OEE', data: chartDataOEE, borderColor: '#a855f7', backgroundColor: 'rgba(168, 85, 247, 0.1)', fill: true, tension: 0.4, pointRadius: 3 },
-                            { label: 'P', data: chartDataP, borderColor: '#f59e0b', borderDash:[4,4], borderWidth: 1.5, pointRadius: 0 },
-                            { label: 'A', data: chartDataA, borderColor: '#06b6d4', borderDash:[4,4], borderWidth: 1.5, pointRadius: 0 }
+                            { label: 'OEE', data: chartDataOEE, borderColor: '#a855f7', backgroundColor: 'rgba(168, 85, 247, 0.1)', fill: true, tension: 0.4, pointRadius: 1.5 },
+                            { label: 'P', data: chartDataP, borderColor: '#f59e0b', borderDash:[4,4], borderWidth: 1, pointRadius: 0 },
+                            { label: 'A', data: chartDataA, borderColor: '#06b6d4', borderDash:[4,4], borderWidth: 1, pointRadius: 0 }
                         ]
                     },
                     options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false, 
+                        responsive: true, maintainAspectRatio: false, 
                         interaction: { mode: 'index', intersect: false },
                         plugins: { 
                             legend: { labels: { usePointStyle: true, boxWidth: 8 } },
@@ -779,21 +796,20 @@
                 });
             }
 
-            // Chart Speed vs Loss (Uses Full Month Mapped Data)
+            // Chart Speed vs Loss (6 Months)
             if(document.getElementById('chartSpeedLoss')) {
                 if(charts.speed) charts.speed.destroy();
                 charts.speed = new Chart(document.getElementById('chartSpeedLoss'), {
                     type: 'line',
                     data: {
-                        labels: fullMonthDates, // Use 1-30 Nov
+                        labels: fullDates,
                         datasets: [
                             { type: 'bubble', label: 'Loss Event', data: chartBubbles, backgroundColor: 'rgba(239,68,68,0.7)', borderColor: '#ef4444' },
-                            { type: 'line', label: 'Speed', data: chartDataSpeed, borderColor: '#a855f7', tension: 0.3, borderWidth: 2, pointRadius: 0 }
+                            { type: 'line', label: 'Speed', data: chartDataSpeed, borderColor: '#a855f7', tension: 0.3, borderWidth: 1.5, pointRadius: 0 }
                         ]
                     },
                     options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false,
+                        responsive: true, maintainAspectRatio: false,
                         interaction: { mode: 'index', intersect: false },
                         scales: { x: { grid: { display: false } } },
                         plugins: { 
@@ -801,7 +817,6 @@
                                 callbacks: { 
                                     label: c => {
                                         if(c.dataset.type === 'bubble') {
-                                            // Handle "empty bubble" gracefully
                                             if (c.raw.y === null) return null;
                                             return `Loss: ${c.raw.note} (${decimalHoursToHM(c.raw.dur)})`;
                                         }
@@ -828,18 +843,14 @@
                     data: {
                         labels: ['H1','H2','H3','H4','H5','H6'],
                         datasets: [
-                            { label: 'Nov', data: getCoop(curData), backgroundColor: '#38bdf8', borderRadius: 4 },
-                            { label: 'Oct', data: getCoop(prevData), backgroundColor: '#64748b', borderRadius: 4 }
+                            { label: 'Avg (Jun-Nov)', data: getCoop(curData), backgroundColor: '#38bdf8', borderRadius: 4 }
                         ]
                     },
                     options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } } } }
                 });
             }
 
-            const tNov = curData.reduce((s,d)=>s+hr(d['Up Time']),0)/curData.length;
-            const tOct = prevData.reduce((s,d)=>s+hr(d['Up Time']),0)/prevData.length;
-            const saved = tOct ? ((tOct-tNov)/tOct)*100 : 0;
-            setHtml('badge-eff', `<i class="fa-solid fa-bolt text-yellow-400"></i> Efficiency (Up Time): เร็วขึ้น ${saved.toFixed(1)}%`);
+            setHtml('badge-eff', `<i class="fa-solid fa-bolt text-yellow-400"></i> Efficiency: 6-Month Average`);
         }
 
         init();
